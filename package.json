@@ -30,10 +30,8 @@
     "test": "node spec/support/jasmine-runner.js"
   },
   "author": "Gojko Adzic <gojko@gojko.com> http://gojko.net",
-  "dependencies": {
-    "bluebird": "^3.3.0"
-  },
   "devDependencies": {
+    "bluebird": "^3.3.0",
     "jasmine": "^2.4.1",
     "jasmine-spec-reporter": "^2.4.0",
     "jscs": "^2.9.0",

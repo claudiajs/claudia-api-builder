@@ -57,49 +57,49 @@ describe('ApiBuilder', function () {
 			expect(lambdaContext.done).toHaveBeenCalledWith(
 				{type: 'InvalidRequest', message: 'no handler for /no:GET'});
 		});
-		it('can route calls to a single GET method', function (done) {
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(requestHandler).toHaveBeenCalledWith(apiRequest);
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
+		it('can route calls to a single GET method', function () {
+			underTest.router(apiRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
-		it('can route to multiple methods', function (done) {
+		it('can route to multiple methods', function () {
 			underTest.post('/echo', postRequestHandler);
 			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
+			underTest.router(apiRequest, lambdaContext);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(requestHandler).not.toHaveBeenCalled();
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
-		it('can route to multiple routes', function (done) {
+		it('can route to multiple routes', function () {
 			underTest.post('/echo2', postRequestHandler);
 			apiRequest.context.path = '/echo2';
 			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
+			underTest.router(apiRequest, lambdaContext);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(requestHandler).not.toHaveBeenCalled();
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
-		it('can handle synchronous exceptions in the routed method', function (done) {
+		it('can handle synchronous exceptions in the routed method', function () {
 			requestHandler.and.throwError('Error');
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error), undefined);
-			}).then(done, done.fail);
+			underTest.router(apiRequest, lambdaContext);
+			expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error), undefined);
 		});
-		it('can handle successful synchronous results from the request handler', function (done) {
+		it('can handle successful synchronous results from the request handler', function () {
 			requestHandler.and.returnValue({hi: 'there'});
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
-			}).then(done, done.fail);
+			underTest.router(apiRequest, lambdaContext);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
 		});
 		it('handles response promises without resolving', function (done) {
 			requestHandler.and.returnValue(requestPromise);
 			underTest.router(apiRequest, lambdaContext);
-			Promise.resolve().then(function () {
+			Promise.resolve().then(function () { /* trick async execution to wait for the previous promise cycle */
 				expect(lambdaContext.done).not.toHaveBeenCalled();
 			}).then(done, done.fail);
+		});
+		it('checks that .then is actually a function to distinguish promises from false positives', function () {
+			requestHandler.and.returnValue({then: 1});
+			underTest.router(apiRequest, lambdaContext);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, {then: 1});
 		});
 		it('handles request promise rejecting', function (done) {
 			requestHandler.and.returnValue(requestPromise);

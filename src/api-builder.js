@@ -1,5 +1,4 @@
-/*global module, require */
-var Promise = require('bluebird');
+/*global module */
 module.exports = function ApiBuilder() {
 	'use strict';
 	var self = this,
@@ -24,15 +23,24 @@ module.exports = function ApiBuilder() {
 		return methodConfigurations;
 	};
 	self.router = function (event, context) {
-		var handler;
+		var handler, result;
 		if (event && event.context && event.context.path && event.context.method) {
 			handler = routes[event.context.path] && routes[event.context.path][event.context.method];
 			if (handler) {
-				return Promise.resolve(event).then(handler).then(function (result) {
-					context.done(null, result);
-				}, function (error) {
-					context.done(error, undefined);
-				});
+				try {
+					result = handler(event);
+					if (result && result.then && (typeof result.then === 'function')) {
+						return result.then(function (promiseResult) {
+							context.done(null, promiseResult);
+						}, function (promiseError) {
+							context.done(promiseError, undefined);
+						});
+					} else {
+						context.done(null, result);
+					}
+				} catch (e) {
+					context.done(e, undefined);
+				}
 			} else {
 				context.done({type: 'InvalidRequest', message: 'no handler for ' + event.context.path + ':' + event.context.method});
 			}
