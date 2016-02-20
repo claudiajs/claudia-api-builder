@@ -43,5 +43,5 @@ Claudia will automatically bundle all the parameters and pass it to your handler
 ### Responding to requests
 
 You can either respond synchronously (just return a value, as above), or respond with a `Promise`. In that case, the lambda function will wait until the 
-`Promise` resolves or rejects before responding. Please note that AWS currently uses Node.js 10.0.36, which does not include the standard `Promise` library,
+`Promise` resolves or rejects before responding. Please note that AWS currently uses Node.js 0.10.36, which does not include the standard `Promise` library,
 so you need to include a third party one. API Builder just checks for the `.then` method, so it should work with any A+ Promise library.
