@@ -36,6 +36,12 @@ describe('ApiBuilder', function () {
 				'echo': { methods: ['GET']}
 			});
 		});
+		it('can accept a route without a slash', function () {
+			underTest.get('echo', requestHandler);
+			expect(underTest.apiConfig()).toEqual({
+				'echo': { methods: ['GET']}
+			});
+		});
 	});
 	describe('routing calls', function () {
 		var apiRequest;
@@ -60,6 +66,14 @@ describe('ApiBuilder', function () {
 		it('can route calls to a single GET method', function () {
 			underTest.router(apiRequest, lambdaContext);
 			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+		});
+		it('can route calls configured without a slash', function () {
+			underTest.post('echo', postRequestHandler);
+			apiRequest.context.method = 'POST';
+			underTest.router(apiRequest, lambdaContext);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(requestHandler).not.toHaveBeenCalled();
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
 		it('can route to multiple methods', function () {

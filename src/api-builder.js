@@ -6,17 +6,21 @@ module.exports = function ApiBuilder() {
 		routes = {};
 	['GET', 'POST', 'PUT'].forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler) {
-			var pathPart = route.replace(/^\//, '');
+			var pathPart = route.replace(/^\//, ''),
+				canonicalRoute = route;
+			if (!/^\//.test(canonicalRoute)) {
+				canonicalRoute = '/' + route;
+			}
 			if (!methodConfigurations[pathPart]) {
 				methodConfigurations[pathPart] = { methods: [] };
 			}
 			if (methodConfigurations[pathPart].methods.indexOf(method) === -1) {
 				methodConfigurations[pathPart].methods.push(method);
 			}
-			if (!routes[route]) {
-				routes[route] = {};
+			if (!routes[canonicalRoute]) {
+				routes[canonicalRoute] = {};
 			}
-			routes[route][method] = handler;
+			routes[canonicalRoute][method] = handler;
 		};
 	});
 	self.apiConfig = function () {
