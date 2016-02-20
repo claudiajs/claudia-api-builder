@@ -16,30 +16,45 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('configuration', function () {
+		it('carries version 2', function () {
+			expect(underTest.apiConfig().version).toEqual(2);
+		});
 		it('can configure a single GET method', function () {
 			underTest.get('/echo', requestHandler);
-			expect(underTest.apiConfig()).toEqual({
-				'echo': { methods: ['GET']}
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': { 'GET': {}}
 			});
 		});
 		it('can configure a single route with multiple methods', function () {
 			underTest.get('/echo', requestHandler);
 			underTest.post('/echo', postRequestHandler);
-			expect(underTest.apiConfig()).toEqual({
-				'echo': { methods: ['GET', 'POST']}
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': {'GET' : {}, 'POST': {}}
 			});
 		});
 		it('can override existing route', function () {
 			underTest.get('/echo', requestHandler);
 			underTest.get('/echo', postRequestHandler);
-			expect(underTest.apiConfig()).toEqual({
-				'echo': { methods: ['GET']}
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': { 'GET': {}}
 			});
 		});
 		it('can accept a route without a slash', function () {
 			underTest.get('echo', requestHandler);
-			expect(underTest.apiConfig()).toEqual({
-				'echo': { methods: ['GET']}
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': { 'GET': {}}
+			});
+		});
+		it('can accept routes in mixed case', function () {
+			underTest.get('EcHo', requestHandler);
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': { 'GET': {}}
+			});
+		});
+		it('records options', function () {
+			underTest.get('EcHo', requestHandler, {errorCode: 403});
+			expect(underTest.apiConfig().routes).toEqual({
+				'echo': { 'GET': {errorCode: 403}}
 			});
 		});
 	});
@@ -67,6 +82,11 @@ describe('ApiBuilder', function () {
 			underTest.router(apiRequest, lambdaContext);
 			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+		});
+		it('can route calls in mixed case', function () {
+			apiRequest.context.path = '/eChO';
+			underTest.router(apiRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
 		});
 		it('can route calls configured without a slash', function () {
 			underTest.post('echo', postRequestHandler);

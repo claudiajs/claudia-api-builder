@@ -5,18 +5,16 @@ module.exports = function ApiBuilder() {
 		methodConfigurations = {},
 		routes = {};
 	['GET', 'POST', 'PUT'].forEach(function (method) {
-		self[method.toLowerCase()] = function (route, handler) {
-			var pathPart = route.replace(/^\//, ''),
-				canonicalRoute = route;
+		self[method.toLowerCase()] = function (route, handler, options) {
+			var pathPart = route.replace(/^\//, '').toLowerCase(),
+				canonicalRoute = route.toLowerCase();
 			if (!/^\//.test(canonicalRoute)) {
 				canonicalRoute = '/' + route;
 			}
 			if (!methodConfigurations[pathPart]) {
-				methodConfigurations[pathPart] = { methods: [] };
+				methodConfigurations[pathPart] = {} ;
 			}
-			if (methodConfigurations[pathPart].methods.indexOf(method) === -1) {
-				methodConfigurations[pathPart].methods.push(method);
-			}
+			methodConfigurations[pathPart][method] = (options || {});
 			if (!routes[canonicalRoute]) {
 				routes[canonicalRoute] = {};
 			}
@@ -24,12 +22,13 @@ module.exports = function ApiBuilder() {
 		};
 	});
 	self.apiConfig = function () {
-		return methodConfigurations;
+		return {version: 2, routes: methodConfigurations};
 	};
 	self.router = function (event, context) {
-		var handler, result;
+		var handler, result, path;
 		if (event && event.context && event.context.path && event.context.method) {
-			handler = routes[event.context.path] && routes[event.context.path][event.context.method];
+			path = event.context.path.toLowerCase();
+			handler = routes[path] && routes[path][event.context.method];
 			if (handler) {
 				try {
 					result = handler(event);
