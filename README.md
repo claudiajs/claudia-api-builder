@@ -45,3 +45,24 @@ Claudia will automatically bundle all the parameters and pass it to your handler
 You can either respond synchronously (just return a value, as above), or respond with a `Promise`. In that case, the lambda function will wait until the 
 `Promise` resolves or rejects before responding. Please note that AWS currently uses Node.js 0.10.36, which does not include the standard `Promise` library,
 so you need to include a third party one. API Builder just checks for the `.then` method, so it should work with any A+ Promise library.
+
+### Customising response codes and content types
+
+By default, Claudia.js uses 500 as the HTTP response code for all errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. You can change all that by using the optional third argument to handler definition methods. All keys are optional, and the structure is:
+
+  * `error`: a number of a key-value map. If the number is specified, then that's used as the HTTP response code. If the key-value map is specified, it should have the following keys:
+    * `code`: HTTP response code
+    * `contentType`: the content type of the response
+  * `success`: a number of a key-value map. If the number is specified, then that's used as the HTTP response code. If the key-value map is specified, it should have the following keys:
+    * `code`: HTTP response code
+    * `contentType`: the content type of the response
+
+These special rules apply to content types and codes:
+
+  * When the error content type is text/plain, only the error message is sent back in the body, not the entire error structure.
+  * When the error content type is application/json, the entire error structure is sent back .
+  * When the response type is application/json, the response is JSON-encoded. So if you just send back a string, it will have quotes around it.
+  * When the response type is text/plain, text/xml, text/html or application/xml, the response is sent back without JSON encoding (so no extra quotes). 
+  * In case of 3xx response codes for success, Claudia puts the response body into the Location header, so you can easily create HTTP redirects.
+
+To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html) .
