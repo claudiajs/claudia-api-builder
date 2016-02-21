@@ -6,8 +6,8 @@ module.exports = function ApiBuilder() {
 		routes = {};
 	['GET', 'POST', 'PUT'].forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
-			var pathPart = route.replace(/^\//, '').toLowerCase(),
-				canonicalRoute = route.toLowerCase();
+			var pathPart = route.replace(/^\//, ''),
+				canonicalRoute = route;
 			if (!/^\//.test(canonicalRoute)) {
 				canonicalRoute = '/' + route;
 			}
@@ -27,7 +27,7 @@ module.exports = function ApiBuilder() {
 	self.router = function (event, context) {
 		var handler, result, path;
 		if (event && event.context && event.context.path && event.context.method) {
-			path = event.context.path.toLowerCase();
+			path = event.context.path;
 			handler = routes[path] && routes[path][event.context.method];
 			if (handler) {
 				try {

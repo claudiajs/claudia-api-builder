@@ -48,11 +48,11 @@ describe('ApiBuilder', function () {
 		it('can accept routes in mixed case', function () {
 			underTest.get('EcHo', requestHandler);
 			expect(underTest.apiConfig().routes).toEqual({
-				'echo': { 'GET': {}}
+				'EcHo': { 'GET': {}}
 			});
 		});
 		it('records options', function () {
-			underTest.get('EcHo', requestHandler, {errorCode: 403});
+			underTest.get('echo', requestHandler, {errorCode: 403});
 			expect(underTest.apiConfig().routes).toEqual({
 				'echo': { 'GET': {errorCode: 403}}
 			});
@@ -84,9 +84,10 @@ describe('ApiBuilder', function () {
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
 		it('can route calls in mixed case', function () {
-			apiRequest.context.path = '/eChO';
+			underTest.get('/CamelCase', postRequestHandler);
+			apiRequest.context.path = '/CamelCase';
 			underTest.router(apiRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
 		});
 		it('can route calls configured without a slash', function () {
 			underTest.post('echo', postRequestHandler);
