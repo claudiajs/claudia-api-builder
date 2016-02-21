@@ -23,7 +23,6 @@ var ApiBuilder = require('claudia-api-builder'),
 module.exports = api;
 
 api.get('/greet', function (request) {
-	'use strict';
 	return request.queryString.name + ' is ' + superb();
 });
 ````
@@ -50,19 +49,19 @@ so you need to include a third party one. API Builder just checks for the `.then
 
 By default, Claudia.js uses 500 as the HTTP response code for all errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. You can change all that by using the optional third argument to handler definition methods. All keys are optional, and the structure is:
 
-  * `error`: a number of a key-value map. If the number is specified, then that's used as the HTTP response code. If the key-value map is specified, it should have the following keys:
+  * `error`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
     * `code`: HTTP response code
     * `contentType`: the content type of the response
-  * `success`: a number of a key-value map. If the number is specified, then that's used as the HTTP response code. If the key-value map is specified, it should have the following keys:
+  * `success`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
     * `code`: HTTP response code
     * `contentType`: the content type of the response
 
 These special rules apply to content types and codes:
 
-  * When the error content type is text/plain, only the error message is sent back in the body, not the entire error structure.
-  * When the error content type is application/json, the entire error structure is sent back .
-  * When the response type is application/json, the response is JSON-encoded. So if you just send back a string, it will have quotes around it.
-  * When the response type is text/plain, text/xml, text/html or application/xml, the response is sent back without JSON encoding (so no extra quotes). 
-  * In case of 3xx response codes for success, Claudia puts the response body into the Location header, so you can easily create HTTP redirects.
+  * When the error content type is `text/plain` or `text/html`, only the error message is sent back in the body, not the entire error structure.
+  * When the error content type is `application/json`, the entire error structure is sent back with the response.
+  * When the response type is `application/json`, the response is JSON-encoded. So if you just send back a string, it will have quotes around it.
+  * When the response type is `text/plain`, `text/xml`, `text/html` or `application/xml`, the response is sent back without JSON encoding (so no extra quotes). 
+  * In case of 3xx response codes for success, the response goes into the `Location` header, so you can easily create HTTP redirects.
 
-To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html) .
+To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html).
