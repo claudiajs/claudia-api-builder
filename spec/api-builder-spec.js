@@ -72,6 +72,12 @@ describe('ApiBuilder', function () {
 				}
 			};
 		});
+		it('can route to /', function () {
+			underTest.get('/', postRequestHandler);
+			apiRequest.context.path = '/';
+			underTest.router(apiRequest, lambdaContext);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+		});
 		it('complains about an unsuported route', function () {
 			apiRequest.context.path = '/no';
 			underTest.router(apiRequest, lambdaContext);
