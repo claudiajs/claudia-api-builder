@@ -4,7 +4,7 @@ module.exports = function ApiBuilder() {
 	var self = this,
 		methodConfigurations = {},
 		routes = {};
-	['GET', 'POST', 'PUT'].forEach(function (method) {
+	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'].forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
 			var pathPart = route.replace(/^\//, ''),
 				canonicalRoute = route;
