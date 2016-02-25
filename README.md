@@ -1,6 +1,6 @@
 #Claudia API Builder
 
-<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="150" />
+<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="150" align="right" />
 
 This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
   * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
