@@ -15,6 +15,26 @@ describe('ApiBuilder', function () {
 			requestReject = reject;
 		});
 	});
+	describe('methods', function () {
+		it('should include a `get` method', function () {
+			expect(typeof underTest.get).toEqual('function');
+		});
+		it('should include a `put` method', function () {
+			expect(typeof underTest.put).toEqual('function');
+		});
+		it('should include a `post` method', function () {
+			expect(typeof underTest.post).toEqual('function');
+		});
+		it('should include a `delete` method', function () {
+			expect(typeof underTest.delete).toEqual('function');
+		});
+		it('should include a `head` method', function () {
+			expect(typeof underTest.head).toEqual('function');
+		});
+		it('should include a `patch` method', function () {
+			expect(typeof underTest.patch).toEqual('function');
+		});
+	});
 	describe('configuration', function () {
 		it('carries version 2', function () {
 			expect(underTest.apiConfig().version).toEqual(2);
