@@ -31,9 +31,6 @@ describe('ApiBuilder', function () {
 		it('should include a `head` method', function () {
 			expect(typeof underTest.head).toEqual('function');
 		});
-		it('should include a `options` method', function () {
-			expect(typeof underTest.options).toEqual('function');
-		});
 		it('should include a `patch` method', function () {
 			expect(typeof underTest.patch).toEqual('function');
 		});
