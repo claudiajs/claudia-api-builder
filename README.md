@@ -1,6 +1,6 @@
 #Claudia API Builder
 
-<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" align="left" height="250" />
+<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="150" />
 
 This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
   * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
@@ -13,6 +13,7 @@ This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
 The API builder is designed to work with [Claudia](https://github.com/claudiajs), and add minimal overhead to client projects. 
 
 [![Join the chat at https://gitter.im/claudiajs/claudia](https://badges.gitter.im/claudiajs/claudia.svg)](https://gitter.im/claudiajs/claudia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 ## API definition syntax
 
