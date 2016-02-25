@@ -78,6 +78,25 @@ describe('ApiBuilder', function () {
 			});
 		});
 	});
+	describe('routing methods', function () {
+		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
+			it('can route calls to a ' + method + '  method', function () {
+				var apiRequest = {
+					context: {
+						path: '/test',
+						method: method
+					},
+					queryString: {
+						a: 'b'
+					}
+				};
+				underTest[method.toLowerCase()]('/test', requestHandler);
+				underTest.router(apiRequest, lambdaContext);
+				expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			});
+		});
+	});
 	describe('routing calls', function () {
 		var apiRequest;
 		beforeEach(function () {
@@ -176,5 +195,6 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 			requestResolve({hi: 'there'});
 		});
+
 	});
 });
