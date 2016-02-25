@@ -1,13 +1,18 @@
 #Claudia API Builder
 
-This utility simplifies Node.js Lambda - API Gateway handling. 
-  * can process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
+<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="250" />
+
+This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
+  * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
     you can develop and deploy an entire API simpler and avoid inconsistencies.
-  * can work with synchronous responses or promises, so you can develop easier
-  * any exceptions or promise rejections are automatically reported to Lambda as errors
-  * any synchronous responses or promise resolutions are automatically reported to Lambda as results
+  * work with synchronous responses or promises, so you can develop easier
+    * handle exceptions or promise rejections automatically as Lambda errors
+    * handle synchronous responses or promise resolutions automatically as Lambda
+  * configure response content types and HTTP codes easily
 
 The API builder is designed to work with [Claudia](https://github.com/claudiajs), and add minimal overhead to client projects. 
+
+[![Join the chat at https://gitter.im/claudiajs/claudia](https://badges.gitter.im/claudiajs/claudia.svg)](https://gitter.im/claudiajs/claudia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## API definition syntax
 
