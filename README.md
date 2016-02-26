@@ -1,6 +1,6 @@
 #Claudia API Builder
 
-<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="150" align="right" />
+<img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="300" align="right" />
 
 This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
   * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
@@ -44,6 +44,7 @@ Claudia will automatically bundle all the parameters and pass it to your handler
   * `headers`: a key-value map of all the HTTP headers posted by the client
   * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
   * `body`: in case of an `application/json` POST or PUT, the body of the request, parsed as a JSON object
+  * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
 
 ### Responding to requests
 
