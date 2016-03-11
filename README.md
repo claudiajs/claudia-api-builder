@@ -21,7 +21,7 @@ An instance of the Claudia API Builder should be used as the module export from 
 by instantiating a new `ApiBuilder`, then defining HTTP handlers for paths by calling `.get`, `.put`, and `.post`. For example, the following 
 snippet creates a single handler for a `GET` call to `/greet`, responding with a parameterised message:
 
-````
+```javascript
 var ApiBuilder = require('claudia-api-builder'),
 	api = new ApiBuilder(),
 	superb = require('superb');
@@ -31,7 +31,7 @@ module.exports = api;
 api.get('/greet', function (request) {
 	return request.queryString.name + ' is ' + superb();
 });
-````
+```
 
 For a more detailed example, see the [Web API Example project](https://github.com/claudiajs/example-projects/tree/master/web-api).
 
@@ -62,6 +62,19 @@ By default, Claudia.js uses 500 as the HTTP response code for all errors, and 20
   * `success`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
     * `code`: HTTP response code
     * `contentType`: the content type of the response
+  * `apiKeyRequired`: boolean, determines if a valid API key is required to call this method. See _Requiring Api Keys_ below for more information
+
+For example:
+
+```javascript
+api.get('/greet', function (request) {
+	return request.queryString.name + ' is ' + superb();
+}, {
+  success: { contentType: 'text/plain' }, 
+  error: {code: 403}
+});
+
+```
 
 These special rules apply to content types and codes:
 
@@ -72,3 +85,13 @@ These special rules apply to content types and codes:
   * In case of 3xx response codes for success, the response goes into the `Location` header, so you can easily create HTTP redirects.
 
 To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html).
+
+### Requiring API Keys
+
+You can force a method to require an API key by using an optional third argument to handler definition methods, and setting the `apiKeyRequired` property on it. For example:
+
+```javascript
+api.get('/echo', function (request) { ... }, {apiKeyRequired: true});
+```
+
+See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) for more information on creating and using API keys.
