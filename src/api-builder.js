@@ -7,7 +7,7 @@ module.exports = function ApiBuilder() {
 		customCorsHandler,
 		customCorsHeaders,
 		isApiResponse = function (obj) {
-			return obj && Object.getPrototypeOf(obj) === self.ApiResponse.prototype;
+			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
 		packResult = function (handlerResult, route, method) {
 			var path = route.replace(/^\//, ''),
