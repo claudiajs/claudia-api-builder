@@ -4,6 +4,8 @@ module.exports = function ApiBuilder() {
 	var self = this,
 		methodConfigurations = {},
 		routes = {},
+		customCorsHandler,
+		customCorsHeaders,
 		isApiResponse = function (obj) {
 			return obj && Object.getPrototypeOf(obj) === self.ApiResponse.prototype;
 		},
@@ -48,7 +50,34 @@ module.exports = function ApiBuilder() {
 		};
 	});
 	self.apiConfig = function () {
-		return {version: 2, routes: methodConfigurations};
+		var result = {version: 2, routes: methodConfigurations};
+		if (customCorsHandler !== undefined) {
+			result.corsHandlers = !!customCorsHandler;
+		}
+		if (customCorsHeaders) {
+			result.corsHeaders = customCorsHeaders;
+		}
+		return result;
+	};
+	self.corsOrigin = function (handler) {
+		if (!handler) {
+			customCorsHandler = false;
+		} else {
+			if (typeof handler === 'function') {
+				customCorsHandler = handler;
+			} else {
+				customCorsHandler = function () {
+					return handler;
+				};
+			}
+		}
+	};
+	self.corsHeaders = function (headers) {
+		if (typeof headers === 'string') {
+			customCorsHeaders = headers;
+		} else {
+			throw 'corsHeaders only accepts strings';
+		}
 	};
 	self.ApiResponse = function (responseBody, responseHeaders) {
 		this.response = responseBody;
@@ -58,6 +87,9 @@ module.exports = function ApiBuilder() {
 		var handler, result, path;
 		if (event && event.context && event.context.path && event.context.method) {
 			path = event.context.path;
+			if (event.context.method === 'OPTIONS' && customCorsHandler) {
+				return context.done(null, customCorsHandler(event));
+			}
 			handler = routes[path] && routes[path][event.context.method];
 			if (handler) {
 				try {

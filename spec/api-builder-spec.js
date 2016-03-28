@@ -253,4 +253,49 @@ describe('ApiBuilder', function () {
 			expect(lambdaContext.done).toHaveBeenCalledWith(new Error('Abort'));
 		});
 	});
+	describe('CORS handling', function () {
+		it('does not set corsHandlers unless corsOrigin called', function () {
+			expect(underTest.apiConfig().corsHandlers).toBeUndefined();
+		});
+		it('sets corsHandlers to false if called with false', function () {
+			underTest.corsOrigin(false);
+			expect(underTest.apiConfig().corsHandlers).toBe(false);
+		});
+		it('sets corsHandlers to true if passed a function', function () {
+			underTest.corsOrigin(function () { });
+			expect(underTest.apiConfig().corsHandlers).toBe(true);
+		});
+		it('sets corsHandlers to true if passed a string', function () {
+			underTest.corsOrigin('origin');
+			expect(underTest.apiConfig().corsHandlers).toBe(true);
+		});
+		it('routes OPTIONS to return the result of a custom CORS handler in the Allowed-Origins header', function () {
+			var corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin'),
+				apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
+			underTest.get('/existing', requestHandler);
+			underTest.corsOrigin(corsHandler);
+			underTest.router(apiRequest, lambdaContext);
+			expect(corsHandler).toHaveBeenCalledWith(apiRequest);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin');
+		});
+		it('routes OPTIONS to return the string set by corsOrigin', function () {
+			var apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
+			underTest.get('/existing', requestHandler);
+			underTest.corsOrigin('custom-origin-string');
+			underTest.router(apiRequest, lambdaContext);
+			expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin-string');
+		});
+		it('does not set corsHeaders unless corsHeaders called', function () {
+			expect(underTest.apiConfig().corsHeaders).toBeUndefined();
+		});
+		it('sets corsHeaders to a string, if provided', function () {
+			underTest.corsHeaders('X-Api-Request');
+			expect(underTest.apiConfig().corsHeaders).toEqual('X-Api-Request');
+		});
+		it('throws an error if the cors headers is not a string', function () {
+			expect(function () {
+				underTest.corsHeaders(function () { });
+			}).toThrow('corsHeaders only accepts strings');
+		});
+	});
 });
