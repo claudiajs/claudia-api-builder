@@ -59,9 +59,11 @@ By default, Claudia.js uses 500 as the HTTP response code for all errors, and 20
   * `error`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
     * `code`: HTTP response code
     * `contentType`: the content type of the response
+    * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See _Custom headers_ below for more information
   * `success`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
     * `code`: HTTP response code
     * `contentType`: the content type of the response
+    * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See _Custom headers_ below for more information
   * `apiKeyRequired`: boolean, determines if a valid API key is required to call this method. See _Requiring Api Keys_ below for more information
 
 For example:
@@ -95,3 +97,26 @@ api.get('/echo', function (request) { ... }, {apiKeyRequired: true});
 ```
 
 See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) for more information on creating and using API keys.
+
+### Custom headers
+
+Claudia API Builder provides limited support for custom HTTP headers. AWS API Gateway requires all custom headers to be enumerated upfront, and you can use the `success.headers` and `error.headers` keys of your handler configuration for that. There are two options for enumerating headers:
+
+1. Hard-code header values in the configuration (useful for ending sessions in case of errors, redirecting to a well-known location after log-outs etc). To do this, list headers as key-value pairs. For example: 
+  ```javascript
+  api.get('/hard-coded-headers', function () {
+  	return 'OK';
+  }, {success: {headers: {'X-Version': '101', 'Content-Type': 'text/plain'}}});
+  ```
+
+2. Dynamically assign header values from your API code. To do this, evaluate header names as an array, then return an instance of `ApiResponse(contents, headers)` from your handler method. For example:
+  ```javascript
+  api.get('/programmatic-headers', function () {
+	  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'});
+  }, {success: {headers: ['X-Version', 'Content-Type']}});
+
+  ```
+
+Due to the limitations with Lambda error processing, the `error.handlers` key can only be hard-coded. Dynamic values for error handlers are not supported.
+
+To see custom headers in action, see the [Custom Headers Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-headers/web.js).
