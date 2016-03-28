@@ -7,56 +7,28 @@ module.exports = function ApiBuilder() {
 		isApiResponse = function (obj) {
 			return obj && Object.getPrototypeOf(obj) === self.ApiResponse.prototype;
 		},
-		copyHeaders = function (handlerResult, lambdaResult) {
-			lambdaResult.headers = lambdaResult.headers || {};
-			Object.keys(handlerResult.headers).forEach(function (key) {
-				lambdaResult.headers[key] = handlerResult.headers[key];
-			});
-		},
 		packResult = function (handlerResult, route, method) {
 			var path = route.replace(/^\//, ''),
-				customHeaders = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success && methodConfigurations[path][method].success.headers,
-				lambdaResult;
-			if (customHeaders && Array.isArray(customHeaders)) {
-				customHeaders = false;
-			}
-			if (!customHeaders && !handlerResult) {
-				return;
-			}
-			lambdaResult = {};
-			if (customHeaders) {
-				lambdaResult.headers = customHeaders;
-			}
-			if (handlerResult) {
-				if (isApiResponse(handlerResult)) {
-					lambdaResult.response = handlerResult.response;
-					copyHeaders(handlerResult, lambdaResult);
-				} else {
-					lambdaResult.response = handlerResult;
-				}
+				customHeaders = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success && methodConfigurations[path][method].success.headers;
 
+			if (isApiResponse(handlerResult)) {
+				if (!customHeaders) {
+					throw 'cannot use ApiResponse without enumerating headers in ' + method + ' ' + route;
+				}
+				if (!Array.isArray(customHeaders)) {
+					throw 'cannot use ApiResponse with default header values in ' + method + ' ' + route;
+				}
+				Object.keys(handlerResult.headers).forEach(function (header) {
+					if (customHeaders.indexOf(header) < 0) {
+						throw 'unexpected header ' + header + ' in ' + method + ' ' + route;
+					}
+				});
+				return { response: handlerResult.response, headers: handlerResult.headers };
 			}
-			return lambdaResult;
-		},
-		packError = function (handlerError, route, method) {
-			var path = route.replace(/^\//, ''),
-				customHeaders = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].error && methodConfigurations[path][method].error.headers,
-				lambdaError = handlerError;
 			if (customHeaders && Array.isArray(customHeaders)) {
-				customHeaders = false;
+				return { response: handlerResult, headers: {} };
 			}
-			if (typeof handlerError === 'string') {
-				lambdaError = new Error(handlerError);
-			} else if (isApiResponse(handlerError)) {
-				lambdaError = new Error(handlerError.response);
-			}
-			if (customHeaders) {
-				lambdaError.headers = customHeaders;
-			}
-			if (isApiResponse(handlerError)) {
-				copyHeaders(handlerError, lambdaError);
-			}
-			return lambdaError;
+			return handlerResult;
 		};
 	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'].forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
@@ -76,7 +48,7 @@ module.exports = function ApiBuilder() {
 		};
 	});
 	self.apiConfig = function () {
-		return {version: 3, routes: methodConfigurations};
+		return {version: 2, routes: methodConfigurations};
 	};
 	self.ApiResponse = function (responseBody, responseHeaders) {
 		this.response = responseBody;
@@ -94,19 +66,19 @@ module.exports = function ApiBuilder() {
 						return result.then(function (promiseResult) {
 							context.done(null, packResult(promiseResult, path, event.context.method));
 						}, function (promiseError) {
-							context.done(packError(promiseError, path, event.context.method), undefined);
+							context.done(promiseError);
 						});
 					} else {
 						context.done(null, packResult(result, path, event.context.method));
 					}
 				} catch (e) {
-					context.done(packError(e, path, event.context.method), undefined);
+					context.done(e);
 				}
 			} else {
-				context.done({type: 'InvalidRequest', message: 'no handler for ' + event.context.path + ':' + event.context.method});
+				context.done('no handler for ' + event.context.method + ' ' + event.context.path);
 			}
 		} else {
-			context.done({type: 'InvalidRequest', message: 'event must contain context.path and context.method'});
+			context.done('event must contain context.path and context.method');
 		}
 	};
 };
