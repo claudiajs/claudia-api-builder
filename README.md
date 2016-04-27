@@ -43,8 +43,25 @@ Claudia will automatically bundle all the parameters and pass it to your handler
   * `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
   * `headers`: a key-value map of all the HTTP headers posted by the client
   * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
-  * `body`: in case of an `application/json` POST or PUT, the body of the request, parsed as a JSON object
+  * `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
   * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
+  * `context`: a key-value map of elements from the API Gateway context, see the [$context variable](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference) documentation for more info on individual fields 
+     * `method`: HTTP invocation method
+     * `path`: the active resource path (will include generic path components, eg /people/{name})
+     * `stage` : API Gateway stage 
+     * `sourceIp`: Source IP 
+     * `accountId`: identity account ID
+     * `user` : user identity from the context
+     * `userAgent` : user agent from the API Gateway context
+     * `userArn` : user ARN from the API Gateway context
+     * `caller` : caller identity
+     * `apiKey`: API key used for the call
+     * `authorizerPrincipalId`
+     * `cognitoAuthenticationProvider`
+     * `cognitoAuthenticationType` 
+     * `cognitoIdentityId`
+     * `cognitoIdentityPoolId`
+
 
 ### Responding to requests
 
