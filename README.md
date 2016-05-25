@@ -133,7 +133,7 @@ Claudia API Builder provides limited support for custom HTTP headers. AWS API Ga
 
   ```
 
-Due to the limitations with Lambda error processing, the `error.handlers` key can only be hard-coded. Dynamic values for error handlers are not supported.
+Due to the limitations with Lambda error processing, the `error.headers` key can only be hard-coded. Dynamic values for error handlers are not supported.
 
 To see custom headers in action, see the [Custom Headers Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-headers/web.js).
 
