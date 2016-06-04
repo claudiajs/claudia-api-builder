@@ -115,6 +115,12 @@ module.exports = function ApiBuilder() {
 		}
 	};
 	self.addPostDeployStep = function (name, stepFunction) {
+		if (typeof name !== 'string') {
+			throw new Error('addPostDeployStep requires a step name as the first argument');
+		}
+		if (typeof stepFunction !== 'function') {
+			throw new Error('addPostDeployStep requires a function as the first argument');
+		}
 		if (postDeploySteps[name]) {
 			throw new Error('Post deploy hook "' + name + '" already exists');
 		}
@@ -124,7 +130,9 @@ module.exports = function ApiBuilder() {
 		var steps = Object.keys(postDeploySteps),
 			stepResults = {},
 			executeStepMapper = function (stepName) {
-				return postDeploySteps[stepName](options, lambdaDetails, utils).then(function (result) {
+				return utils.Promise.resolve().then(function () {
+					return postDeploySteps[stepName](options, lambdaDetails, utils);
+				}).then(function (result) {
 					stepResults[stepName] = result;
 				});
 			};

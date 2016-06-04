@@ -309,10 +309,22 @@ describe('ApiBuilder', function () {
 			});
 			hook = jasmine.createSpy().and.returnValue(postPromise);
 		});
-		it('can set up a single post-install hook', function () {
+		it('can set up a single post-install hook', function (done) {
 			underTest.addPostDeployStep('first', hook);
 			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise});
-			expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+			Promise.resolve().then(function () {
+				expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+			}).then(done);
+		});
+		it('complains if the first argument is not a step name', function () {
+			expect(function () {
+				underTest.addPostDeployStep(hook);
+			}).toThrowError('addPostDeployStep requires a step name as the first argument');
+		});
+		it('complains if the second argument is not a function', function () {
+			expect(function () {
+				underTest.addPostDeployStep('first');
+			}).toThrowError('addPostDeployStep requires a function as the first argument');
 		});
 		it('does not execute the hook before postDeploy is called', function () {
 			underTest.addPostDeployStep('first', hook);
@@ -336,6 +348,15 @@ describe('ApiBuilder', function () {
 			underTest.addPostDeployStep('first', hook);
 			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
 				expect(result).toEqual({first: { url: 'http://www.google.com' }});
+			}).then(done, done.fail);
+			pResolve({url: 'http://www.google.com'});
+		});
+		it('works with non-promise post-install hooks', function (done) {
+			underTest.addPostDeployStep('first', function () {
+				return 'yes';
+			});
+			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
+				expect(result).toEqual({first: 'yes'});
 			}).then(done, done.fail);
 			pResolve({url: 'http://www.google.com'});
 		});
@@ -367,14 +388,12 @@ describe('ApiBuilder', function () {
 					expect(hook2).not.toHaveBeenCalled();
 				}).then(done, done.fail);
 			});
-			it('execute the second hook after the first one resolves', function (done) {
-				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, done.fail);
-
-				postPromise.then(Promise.resolve).then(function () {
+			it('executes the second hook after the first one resolves', function (done) {
+				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, function () {
 					expect(hook2).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
-				}).then(done, done.fail);
-
+				}).then(done);
 				pResolve({url: 'http://www.google.com'});
+				p2Reject('boom');
 			});
 			it('resolves when the second hook resolves', function (done) {
 				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
