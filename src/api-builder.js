@@ -5,6 +5,7 @@ module.exports = function ApiBuilder() {
 		methodConfigurations = {},
 		routes = {},
 		customCorsHandler,
+		postDeploySteps = {},
 		customCorsHeaders,
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
@@ -112,5 +113,26 @@ module.exports = function ApiBuilder() {
 		} else {
 			context.done('event must contain context.path and context.method');
 		}
+	};
+	self.addPostDeployStep = function (name, stepFunction) {
+		if (postDeploySteps[name]) {
+			throw new Error('Post deploy hook "' + name + '" already exists');
+		}
+		postDeploySteps[name] = stepFunction;
+	};
+	self.postDeploy = function (options, lambdaDetails, utils) {
+		var steps = Object.keys(postDeploySteps),
+			stepResults = {},
+			executeStepMapper = function (stepName) {
+				return postDeploySteps[stepName](options, lambdaDetails, utils).then(function (result) {
+					stepResults[stepName] = result;
+				});
+			};
+		if (!steps.length) {
+			return utils.Promise.resolve(false);
+		}
+		return utils.Promise.map(steps, executeStepMapper, {concurrency: 1}).then(function () {
+			return stepResults;
+		});
 	};
 };

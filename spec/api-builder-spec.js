@@ -298,4 +298,95 @@ describe('ApiBuilder', function () {
 			}).toThrow('corsHeaders only accepts strings');
 		});
 	});
+	describe('post install hooks', function () {
+		var pResolve, pReject,
+			postPromise, hook;
+
+		beforeEach(function () {
+			postPromise = new Promise(function (resolve, reject) {
+				pResolve = resolve;
+				pReject = reject;
+			});
+			hook = jasmine.createSpy().and.returnValue(postPromise);
+		});
+		it('can set up a single post-install hook', function () {
+			underTest.addPostDeployStep('first', hook);
+			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise});
+			expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+		});
+		it('does not execute the hook before postDeploy is called', function () {
+			underTest.addPostDeployStep('first', hook);
+			expect(hook).not.toHaveBeenCalled();
+		});
+		it('cannot add a hook with the same name twice', function () {
+			underTest.addPostDeployStep('first', hook);
+			expect(function () {
+				underTest.addPostDeployStep('first', hook);
+			}).toThrowError('Post deploy hook "first" already exists');
+		});
+		it('does not resolve until the post-install hook resolves', function (done) {
+			var hasResolved = jasmine.createSpy();
+			underTest.addPostDeployStep('first', hook);
+			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(hasResolved, done.fail);
+			Promise.resolve().then(function () {
+				expect(hasResolved).not.toHaveBeenCalled();
+			}).then(done, done.fail);
+		});
+		it('resolves when the post-install resolves', function (done) {
+			underTest.addPostDeployStep('first', hook);
+			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
+				expect(result).toEqual({first: { url: 'http://www.google.com' }});
+			}).then(done, done.fail);
+			pResolve({url: 'http://www.google.com'});
+		});
+		it('returns false when post-deploy hooks are not set up', function (done) {
+			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
+				expect(result).toBeFalsy();
+			}).then(done, done.fail);
+		});
+		describe('multiple hooks', function () {
+			var p2Resolve, p2Reject,
+				postPromise2, hook2;
+			beforeEach(function () {
+				postPromise2 = new Promise(function (resolve, reject) {
+					p2Resolve = resolve;
+					p2Reject = reject;
+				});
+				hook2 = jasmine.createSpy().and.returnValue(postPromise2);
+				underTest.addPostDeployStep('first', hook);
+				underTest.addPostDeployStep('second', hook2);
+			});
+			it('does not execute the hooks immediately', function () {
+				expect(hook).not.toHaveBeenCalled();
+				expect(hook2).not.toHaveBeenCalled();
+			});
+			it('does not execute the second hook until the first resolves', function (done) {
+				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, done.fail);
+				Promise.resolve().then(function () {
+					expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+					expect(hook2).not.toHaveBeenCalled();
+				}).then(done, done.fail);
+			});
+			it('execute the second hook after the first one resolves', function (done) {
+				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, done.fail);
+
+				postPromise.then(Promise.resolve).then(function () {
+					expect(hook2).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+				}).then(done, done.fail);
+
+				pResolve({url: 'http://www.google.com'});
+			});
+			it('resolves when the second hook resolves', function (done) {
+				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(function (result) {
+					expect(result).toEqual({
+						first: { url: 'http://www.google.com' },
+						second: { url: 'http://www.xkcd.com' }
+					});
+				}).then(done, done.fail);
+
+				pResolve({url: 'http://www.google.com'});
+				p2Resolve({url: 'http://www.xkcd.com'});
+			});
+		});
+	});
 });
