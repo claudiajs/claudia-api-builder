@@ -45,6 +45,7 @@ Claudia will automatically bundle all the parameters and pass it to your handler
   * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
   * `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
   * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
+  * `lambdaContext`: (since `1.3.0`) the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
   * `context`: a key-value map of elements from the API Gateway context, see the [$context variable](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference) documentation for more info on individual fields 
      * `method`: HTTP invocation method
      * `path`: the active resource path (will include generic path components, eg /people/{name})

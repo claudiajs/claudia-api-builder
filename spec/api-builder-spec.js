@@ -97,6 +97,26 @@ describe('ApiBuilder', function () {
 			});
 		});
 	});
+	describe('generic config', function () {
+		it('adds the lambda context to event.lambdaContext', function () {
+			var apiRequest = {
+				context: {
+					path: '/',
+					method: 'GET'
+				},
+				queryString: {
+					a: 'b'
+				}
+			};
+			underTest.get('/', requestHandler);
+			underTest.router(apiRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith({
+				lambdaContext: lambdaContext,
+				context: { path: '/', method: 'GET'},
+				queryString: { a: 'b' }
+			});
+		});
+	});
 	describe('routing calls', function () {
 		var apiRequest;
 		beforeEach(function () {

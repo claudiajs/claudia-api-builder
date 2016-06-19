@@ -94,6 +94,7 @@ module.exports = function ApiBuilder() {
 			handler = routes[path] && routes[path][event.context.method];
 			if (handler) {
 				try {
+					event.lambdaContext = context;
 					result = handler(event);
 					if (result && result.then && (typeof result.then === 'function')) {
 						return result.then(function (promiseResult) {
