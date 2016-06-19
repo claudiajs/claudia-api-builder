@@ -3,12 +3,10 @@
 <img src="https://claudiajs.github.io/claudiajs.com/assets/claudiajs.svg" height="300" align="right" />
 
 This utility simplifies Node.js Lambda - API Gateway handling. It helps you:
-  * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
-    you can develop and deploy an entire API simpler and avoid inconsistencies.
-  * work with synchronous responses or promises, so you can develop easier
-    * handle exceptions or promise rejections automatically as Lambda errors
-    * handle synchronous responses or promise resolutions automatically as Lambda
+  * process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that you can develop and deploy an entire API simpler and avoid inconsistencies.
+  * work with synchronous responses or asynchronous promises, so you can develop easier
   * configure response content types and HTTP codes easily
+  * add post-install configuration steps so that you can set up the deployments easier
 
 The API builder is designed to work with [Claudia](https://github.com/claudiajs), and add minimal overhead to client projects. 
 
@@ -68,6 +66,8 @@ Claudia will automatically bundle all the parameters and pass it to your handler
 
 You can either respond synchronously (just return a value, as above), or respond with a `Promise`. In that case, the lambda function will wait until the 
 `Promise` resolves or rejects before responding. API Builder just checks for the `.then` method, so it should work with any A+ Promise library. 
+
+To implement a custom termination workflow, use the [`request.lambdaContext`](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) object, and return a `Promise` that never gets resolved.
 
 ### Customising response codes and content types
 
