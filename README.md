@@ -1,6 +1,6 @@
 #Claudia API Builder
 
-Claudia API Builder makes it possible to use AWS API Gateway as if it was a lightweight JavaScript web server, so it helps developers get started easily and reduces the learning curve required to launch web APIs in AWS. [Check out this video to see how to create and deploy an API in under 5 minutes](https://vimeo.com/156232471).
+Claudia API Builder makes it possible to use AWS API Gateway as if it were a lightweight JavaScript web server, so it helps developers get started easily and reduces the learning curve required to launch web APIs in AWS. [Check out this video to see how to create and deploy an API in under 5 minutes](https://vimeo.com/156232471).
 
 [![Claudia.js Introduction Video](https://claudiajs.com/assets/claudia-intro-video.png)](https://vimeo.com/156232471)
 
