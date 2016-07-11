@@ -7,6 +7,7 @@ module.exports = function ApiBuilder(components) {
 		customCorsHandler,
 		postDeploySteps = {},
 		customCorsHeaders,
+		unsupportedEventCallback,
 		prompter = (components && components.prompter) || require('../ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
@@ -85,6 +86,9 @@ module.exports = function ApiBuilder(components) {
 		this.response = responseBody;
 		this.headers = responseHeaders;
 	};
+	self.unsupportedEvent = function (callback) {
+		unsupportedEventCallback = callback;
+	};
 	self.router = function (event, context) {
 		var handler, result, path;
 		if (event && event.context && event.context.path && event.context.method) {
@@ -113,7 +117,11 @@ module.exports = function ApiBuilder(components) {
 				context.done('no handler for ' + event.context.method + ' ' + event.context.path);
 			}
 		} else {
-			context.done('event must contain context.path and context.method');
+			if (unsupportedEventCallback) {
+				unsupportedEventCallback.apply(this, arguments);
+			} else {
+				context.done('event must contain context.path and context.method');
+			}
 		}
 	};
 	self.addPostDeployStep = function (name, stepFunction) {

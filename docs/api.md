@@ -157,19 +157,29 @@ There are two common ways for passing configuration variables to your API:
 * Store configuration into AWS API Gateway Stage Variables. This is a good option for alphanumeric keys and short configuration items. Different Lambda versions (development, testing, production) will automatically get the correct values through the `request.env` object.
 * Store configuration into a file deployed with the function, and then detect which file to load by using `request.context.stage`.
 
-### Requiring API Keys
+### Configuring stage variables using post-deployment steps 
 
-You can force a method to require an API key by using an optional third argument to handler definition methods, and setting the `apiKeyRequired` property on it. For example:
+_since 1.4.0_
+
+If your API depends on configuration in stage variables, you can automate the configuration process during deployment. Claudia will then enable users to configure the variable value either from the command line, or by prompting interactively during deployment. The syntax is:
 
 ```javascript
-api.get('/echo', function (request) { ... }, {apiKeyRequired: true});
+api.addPostDeployConfig(stageVarName, prompt, configOption);
 ```
 
-See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) for more information on creating and using API keys.
+* `stageVarName`: `string` &ndash; the name of the stage variable you want to configure. To stay safe, use alphanumeric characters only, API Gateway does not allow special characters in variable names
+* `prompt`: `string` &ndash; the text to display when prompting the users to interactively enter the variable
+* `configOption`: `string` &ndash; the name of the command-line option that will be used as a flag for the configuration process. 
 
-### Adding post-deploy steps
 
-If you need to configure the API automatically (for example set up stage variables, execute calls to third parties to set up webhooks and so on), add a post-deploy step to your API. The syntax is:
+If the configuration option is provided as a string, the value is automatically sent to AWS for the current stage without prompting. If the configuration option is provided without value, API Builder will ask the users to interactively enter it.
+
+To see this in action, see the [Post-deploy configuration](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy-configuration) example project.
+
+
+### Adding generic post-deploy steps
+
+If you need to configure the API automatically (for example execute calls to third parties to set up webhooks and so on), add a post-deploy step to your API. The syntax is:
 
 ```javascript
 api.addPostDeployStep(stepName, function (commandLineOptions, lambdaProperties, utils) {} )
@@ -190,4 +200,29 @@ api.addPostDeployStep(stepName, function (commandLineOptions, lambdaProperties, 
 
 The post-deploy step method can return a string or an object, or a Promise returning a string or an object. If it returns a Promise, the deployment will pause until the Promise resolves. In case of multiple post-deployment steps, they get executed in sequence, not concurrently. Any values returned from the method, or resolved by the Promise, will be included in the final installation report presented to the users. So you can take advantage of this, for example, to provide configuration information for third-party components that users need to set up manually.
 
-Too see this in action, see the [Post-deploy](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy) example project.
+To see this in action, see the [Post-deploy](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy) example project.
+
+### Requiring API Keys
+
+You can force a method to require an API key by using an optional third argument to handler definition methods, and setting the `apiKeyRequired` property on it. For example:
+
+```javascript
+api.get('/echo', function (request) { ... }, {apiKeyRequired: true});
+```
+
+See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) for more information on creating and using API keys.
+
+## Handling unsupported event types
+
+_since 1.4.0_
+
+API Builder expects the events to come in a particular format, when invoked via API Gateway. You can invoke the Lambda function built using API Builder directly, or set it up to receive events from other sources, by creating a handler for unsupported event types. The syntax is:
+
+```javascript
+api.unsupportedEvent(callback);
+```
+
+* `callback`: `function` &ndash; a [Lambda handler function](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html)
+
+Note that the callback function completely takes over the responsibility for ending the Lambda context in this case. API Builder does not provide any shortcuts for Promises or any other features apart from directly passing the event and the context to the unsupported event handler.
+

@@ -219,7 +219,23 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 			requestResolve({hi: 'there'});
 		});
-
+		describe('unsupported event format', function () {
+			it('causes lambda context to complete with error if no custom handler', function () {
+				underTest.router({}, lambdaContext);
+				expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+			});
+			it('calls custom handler if provided', function (done) {
+				var fakeCallback = jasmine.createSpy();
+				underTest.unsupportedEvent(function (event, context, callback) {
+					expect(event).toEqual({a: 1});
+					expect(context).toEqual(lambdaContext);
+					expect(callback).toEqual(fakeCallback);
+					expect(lambdaContext.done).not.toHaveBeenCalled();
+					done();
+				});
+				underTest.router({a: 1}, lambdaContext, fakeCallback);
+			});
+		});
 	});
 	describe('custom headers', function () {
 		beforeEach(function () {
