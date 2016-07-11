@@ -8,7 +8,7 @@ module.exports = function ApiBuilder(components) {
 		postDeploySteps = {},
 		customCorsHeaders,
 		unsupportedEventCallback,
-		prompter = (components && components.prompter) || require('../ask'),
+		prompter = (components && components.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
