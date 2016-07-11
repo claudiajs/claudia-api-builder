@@ -1,5 +1,5 @@
-/*global module */
-module.exports = function ApiBuilder() {
+/*global module, require */
+module.exports = function ApiBuilder(components) {
 	'use strict';
 	var self = this,
 		methodConfigurations = {},
@@ -7,6 +7,7 @@ module.exports = function ApiBuilder() {
 		customCorsHandler,
 		postDeploySteps = {},
 		customCorsHeaders,
+		prompter = (components && components.prompter) || require('../ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
@@ -126,6 +127,36 @@ module.exports = function ApiBuilder() {
 			throw new Error('Post deploy hook "' + name + '" already exists');
 		}
 		postDeploySteps[name] = stepFunction;
+	};
+	self.addPostDeployConfig = function (stageVarName, prompt, configOption) {
+		self.addPostDeployStep(stageVarName, function (options, lambdaDetails, utils) {
+			var configureDeployment = function (varValue) {
+					var result = {
+						restApiId: lambdaDetails.apiId,
+						stageName: lambdaDetails.alias,
+						variables: { }
+					};
+					result.variables[stageVarName] = varValue;
+					return result;
+				},
+				deployStageVar = function (deployment) {
+					return utils.apiGatewayPromise.createDeploymentPromise(deployment).then(function () {
+						return deployment.variables[stageVarName];
+					});
+				},
+				getVariable = function () {
+					if (typeof options[configOption] === 'string') {
+						return utils.Promise.resolve(options[configOption]);
+					} else {
+						return prompter(prompt, utils.Promise);
+					}
+				};
+			if (options[configOption]) {
+				return getVariable()
+					.then(configureDeployment)
+					.then(deployStageVar);
+			}
+		});
 	};
 	self.postDeploy = function (options, lambdaDetails, utils) {
 		var steps = Object.keys(postDeploySteps),

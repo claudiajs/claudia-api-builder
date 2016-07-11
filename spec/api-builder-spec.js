@@ -4,9 +4,10 @@ var ApiBuilder = require('../src/api-builder'),
 describe('ApiBuilder', function () {
 	'use strict';
 	var underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
-		postRequestHandler;
+		postRequestHandler, prompter;
 	beforeEach(function () {
-		underTest = new ApiBuilder();
+		prompter = jasmine.createSpy();
+		underTest = new ApiBuilder({prompter: prompter});
 		requestHandler = jasmine.createSpy('handler');
 		postRequestHandler = jasmine.createSpy('postHandler');
 		lambdaContext = jasmine.createSpyObj('lambdaContext', ['done']);
@@ -425,6 +426,80 @@ describe('ApiBuilder', function () {
 
 				pResolve({url: 'http://www.google.com'});
 				p2Resolve({url: 'http://www.xkcd.com'});
+			});
+		});
+	});
+	describe('post-deploy config shortcut', function () {
+		var apiGatewayPromise, lambdaDetails, deploymentResolve, deploymentReject;
+		beforeEach(function () {
+			apiGatewayPromise = jasmine.createSpyObj('apiGatewayPromise', ['createDeploymentPromise']);
+			apiGatewayPromise.createDeploymentPromise.and.returnValue(new Promise(function (resolve, reject) {
+				deploymentResolve = resolve;
+				deploymentReject = reject;
+			}));
+			lambdaDetails = { apiId: 'API_1', alias: 'dev' };
+			underTest.addPostDeployConfig('stageVar', 'Enter var', 'config-var');
+		});
+		it('does nothing if the config arg is not set', function (done) {
+			underTest.postDeploy({a: 1}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(function () {
+				expect(apiGatewayPromise.createDeploymentPromise).not.toHaveBeenCalled();
+			}).then(done, done.fail);
+		});
+		describe('when the config arg is a string', function () {
+			it('sets the variable without prompting', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(function (result) {
+					expect(apiGatewayPromise.createDeploymentPromise).toHaveBeenCalledWith({
+						restApiId: 'API_1',
+						stageName: 'dev',
+						variables: { stageVar: 'val-value' }
+					});
+					expect(prompter).not.toHaveBeenCalled();
+					expect(result).toEqual({stageVar: 'val-value'});
+				}).then(done, done.fail);
+				deploymentResolve('OK');
+			});
+			it('rejects if the deployment rejects', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				.then(done.fail, function (err) {
+					expect(err).toEqual('BOOM!');
+				}).then(done);
+				deploymentReject('BOOM!');
+			});
+		});
+		describe('when the config arg is true', function () {
+			it('prompts for the variable', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(done.fail, done.fail);
+				prompter.and.callFake(function (arg) {
+					expect(arg).toEqual('Enter var');
+					done();
+					return Promise.resolve('X');
+				});
+			});
+			it('deploys the stage variable returned by the prompter', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(function (result) {
+					expect(apiGatewayPromise.createDeploymentPromise).toHaveBeenCalledWith({
+						restApiId: 'API_1',
+						stageName: 'dev',
+						variables: { stageVar: 'X' }
+					});
+					expect(result).toEqual({stageVar: 'X'});
+				}).then(done, done.fail);
+				prompter.and.returnValue(Promise.resolve('X'));
+				deploymentResolve('OK');
+			});
+			it('rejects if the prompter rejects', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(done.fail, function (err) {
+					expect(err).toEqual('BOOM');
+					expect(apiGatewayPromise.createDeploymentPromise).not.toHaveBeenCalled();
+				}).then(done);
+				prompter.and.returnValue(Promise.reject('BOOM'));
+			});
+			it('rejects if the deployment rejects', function (done) {
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise}).then(done.fail, function (err) {
+					expect(err).toEqual('BOOM');
+				}).then(done);
+				prompter.and.returnValue(Promise.resolve('OK'));
+				deploymentReject('BOOM');
 			});
 		});
 	});
