@@ -8,6 +8,7 @@ module.exports = function ApiBuilder(components) {
 		postDeploySteps = {},
 		customCorsHeaders,
 		unsupportedEventCallback,
+		interceptCallback,
 		prompter = (components && components.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
@@ -34,6 +35,44 @@ module.exports = function ApiBuilder(components) {
 				return { response: handlerResult, headers: {} };
 			}
 			return handlerResult;
+		},
+		isThenable = function (param) {
+			return param && param.then && (typeof param.then === 'function');
+		},
+		routeEvent = function (event, context /*, callback*/) {
+			var handler, result, path;
+			if (event && event.context && event.context.path && event.context.method) {
+				path = event.context.path;
+				if (event.context.method === 'OPTIONS' && customCorsHandler) {
+					return context.done(null, customCorsHandler(event));
+				}
+				handler = routes[path] && routes[path][event.context.method];
+				if (handler) {
+					try {
+						event.lambdaContext = context;
+						result = handler(event);
+						if (isThenable(result)) {
+							return result.then(function (promiseResult) {
+								context.done(null, packResult(promiseResult, path, event.context.method));
+							}, function (promiseError) {
+								context.done(promiseError);
+							});
+						} else {
+							context.done(null, packResult(result, path, event.context.method));
+						}
+					} catch (e) {
+						context.done(e);
+					}
+				} else {
+					context.done('no handler for ' + event.context.method + ' ' + event.context.path);
+				}
+			} else {
+				if (unsupportedEventCallback) {
+					unsupportedEventCallback.apply(this, arguments);
+				} else {
+					context.done('event must contain context.path and context.method');
+				}
+			}
 		};
 	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'].forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
@@ -89,39 +128,33 @@ module.exports = function ApiBuilder(components) {
 	self.unsupportedEvent = function (callback) {
 		unsupportedEventCallback = callback;
 	};
-	self.router = function (event, context) {
-		var handler, result, path;
-		if (event && event.context && event.context.path && event.context.method) {
-			path = event.context.path;
-			if (event.context.method === 'OPTIONS' && customCorsHandler) {
-				return context.done(null, customCorsHandler(event));
-			}
-			handler = routes[path] && routes[path][event.context.method];
-			if (handler) {
-				try {
-					event.lambdaContext = context;
-					result = handler(event);
-					if (result && result.then && (typeof result.then === 'function')) {
-						return result.then(function (promiseResult) {
-							context.done(null, packResult(promiseResult, path, event.context.method));
-						}, function (promiseError) {
-							context.done(promiseError);
-						});
-					} else {
-						context.done(null, packResult(result, path, event.context.method));
-					}
-				} catch (e) {
-					context.done(e);
+	self.intercept = function (callback) {
+		interceptCallback = callback;
+	};
+	self.router = function (event, context, callback) {
+		var result,
+			handleResult = function (r) {
+				if (!r) {
+					return context.done(null, null);
 				}
+				return routeEvent(r, context, callback);
+			},
+			handleError = function (e) {
+				context.done(e);
+			};
+		if (!interceptCallback) {
+			return routeEvent(event, context, callback);
+		}
+
+		try {
+			result = interceptCallback(event);
+			if (isThenable(result)) {
+				return result.then(handleResult, handleError);
 			} else {
-				context.done('no handler for ' + event.context.method + ' ' + event.context.path);
+				handleResult(result);
 			}
-		} else {
-			if (unsupportedEventCallback) {
-				unsupportedEventCallback.apply(this, arguments);
-			} else {
-				context.done('event must contain context.path and context.method');
-			}
+		} catch (e) {
+			handleError(e);
 		}
 	};
 	self.addPostDeployStep = function (name, stepFunction) {

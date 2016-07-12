@@ -236,6 +236,90 @@ describe('ApiBuilder', function () {
 				underTest.router({a: 1}, lambdaContext, fakeCallback);
 			});
 		});
+		describe('intercepting calls', function () {
+			var interceptSpy;
+			beforeEach(function () {
+				interceptSpy = jasmine.createSpy();
+				underTest.get('/echo', requestHandler);
+				underTest.post('/echo', postRequestHandler);
+				underTest.intercept(interceptSpy);
+			});
+			it('rejects if the intercept rejects', function (done) {
+				interceptSpy.and.returnValue(Promise.reject('BOOM'));
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).not.toHaveBeenCalled();
+					expect(lambdaContext.done).toHaveBeenCalledWith('BOOM');
+				}).then(done, done.fail);
+			});
+			it('rejects if the intercept throws an exception', function () {
+				interceptSpy.and.throwError('BOOM');
+				underTest.router(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(postRequestHandler).not.toHaveBeenCalled();
+				expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
+			});
+			it('routes the event returned from intercept', function () {
+				interceptSpy.and.returnValue({
+					context: {
+						path: '/echo',
+						method: 'POST'
+					},
+					queryString: {
+						c: 'd'
+					}
+				});
+				underTest.router(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+					context: {
+						path: '/echo',
+						method: 'POST'
+					},
+					queryString: {
+						c: 'd'
+					}
+				}));
+			});
+			it('routes the event resolved by the intercept promise', function (done) {
+				interceptSpy.and.returnValue(Promise.resolve({
+					context: {
+						path: '/echo',
+						method: 'POST'
+					},
+					queryString: {
+						c: 'd'
+					}
+				}));
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+						context: {
+							path: '/echo',
+							method: 'POST'
+						},
+						queryString: {
+							c: 'd'
+						}
+					}));
+				}).then(done, done.fail);
+			});
+			it('aborts if the intercept returns a falsy value', function () {
+				interceptSpy.and.returnValue(false);
+				underTest.router(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(postRequestHandler).not.toHaveBeenCalled();
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
+			});
+			it('aborts if the intercept resolves with a falsy value', function (done) {
+				interceptSpy.and.returnValue(Promise.resolve(false));
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).not.toHaveBeenCalled();
+					expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
+				}).then(done, done.fail);
+			});
+		});
 	});
 	describe('custom headers', function () {
 		beforeEach(function () {
