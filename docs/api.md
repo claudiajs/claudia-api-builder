@@ -229,6 +229,8 @@ The following rules apply for intercepting requests:
 * execute the original request: return the original event, or a promise resolving with the original event
 * execute a modified request: return the modified event, or a promise resolving with the modified event
 
+Check out the [Intercepting Requests Example](https://github.com/claudiajs/example-projects/tree/master/intercepting-requests) to see this in action.
+
 ## Handling unsupported event types
 
 _since 1.4.0_
