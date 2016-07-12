@@ -172,7 +172,23 @@ api.addPostDeployConfig(stageVarName, prompt, configOption);
 * `configOption`: `string` &ndash; the name of the command-line option that will be used as a flag for the configuration process. 
 
 
-If the configuration option is provided as a string, the value is automatically sent to AWS for the current stage without prompting. If the configuration option is provided without value, API Builder will ask the users to interactively enter it.
+If the configuration option is provided as a string, the value is automatically sent to AWS for the current stage without prompting. If the configuration option is provided without value, API Builder will ask the users to interactively enter it. Here's an example:
+
+```javascript
+api.addPostDeployConfig('message', 'Enter a message:', 'custom-message');
+```
+
+In this case, `message` is the name of the stage variable (it will be available as `request.env.message` later). `Enter a message:` is the prompt that the users will see during deployment, and `custom-message` is the configuration option required to trigger the step. When an API contains that line, you can make Claudia ask you to define the stage variable by running
+
+```bash
+claudia update --custom-message
+```
+
+Likewise, you can provide the value directly in the command line for unattended operation
+
+```bash
+claudia update --custom-message Ping
+```
 
 To see this in action, see the [Post-deploy configuration](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy-configuration) example project.
 
