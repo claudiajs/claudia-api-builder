@@ -32,7 +32,7 @@ For a more examples, see the [Web API Example Projects](https://github.com/claud
 
 ## Getting started
 
-* Check out the [Getting Started](docs/getting_started.md) guide for a basic Hello-World style example
+* Check out the [Getting Started](https://claudiajs.com/tutorials/hello-world-api-gateway.html) guide for a basic Hello-World style example
 * Check out the [API Documentation](docs/api.md) for a detailed guide on handling requests, customising responses and configuring your API
 
 ## Questions, suggestions? 
