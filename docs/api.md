@@ -228,6 +228,18 @@ api.get('/echo', function (request) { ... }, {apiKeyRequired: true});
 
 See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) for more information on creating and using API keys.
 
+### Require Authorization
+
+_since claudia 1.4.5_
+
+APIs by default do not require user level authorization, to enable browsers to call them. API Gateway also allows you to set fine-grained permissions based on IAM policies. To do that, configure the request processor by adding an `authorizationType` field, with the value of `AWS_IAM` &ndash; here's an example:
+
+```javascript
+api.get('/hello', function (request) {...}, {authorizationType: 'AWS_IAM'} );
+```
+
+See the [Permissions Documentation Page](http://docs.aws.amazon.com/apigateway/latest/developerguide/permissions.html) of the API Gateway developer guide for information on how to set up user policies for authorization.
+
 ## Intercepting requests
 
 _since 1.5.0_
