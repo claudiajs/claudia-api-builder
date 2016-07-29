@@ -240,6 +240,19 @@ api.get('/hello', function (request) {...}, {authorizationType: 'AWS_IAM'} );
 
 See the [Permissions Documentation Page](http://docs.aws.amazon.com/apigateway/latest/developerguide/permissions.html) of the API Gateway developer guide for information on how to set up user policies for authorization.
 
+### Overriding executing credentials
+
+_since claudia 1.5.0_ 
+
+By default, API Gateway requests will execute under the credentials of the user who created them. You can make the API execute under the credentials of a particular user/IAM role, or pass the caller credentials to the underlying Lambda function by setting the `invokeWithCredentials` flag. Set it to a IAM ARN to use a particular set of credentials, or to `true` to pass caller credentials. If you use this flag, the `authorizationType` is automatically set to `AWS_IAM`, so you don't need to specify it separately. 
+
+```javascript
+// use caller credentials
+api.get('/hello', function (request) {...}, {invokeWithCredentials: true} );
+// use specific credentials
+api.get('/hello', function (request) {...}, {invokeWithCredentials: 'arn:aws:iam::123456789012:role/apigAwsProxyRole'} );
+```
+
 ## Intercepting requests
 
 _since 1.5.0_
