@@ -24,11 +24,13 @@ Claudia will automatically bundle all the parameters and pass it to your handler
 
   * `queryString`: a key-value map of query string arguments
   * `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
-  * `headers`: a key-value map of all the HTTP headers posted by the client
+  * `headers`: a key-value map of all the HTTP headers posted by the client (header names have the same case as in the request)
+  * `normalizedHeaders`: _(since `claudia 1.6.0`)_ a key-value map of all the HTTP headers posted by the client (header names are lowercased for easier processing)
   * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
   * `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
+  * `rawBody`: _(since `claudia 1.6.0`, only when content type is `application/json`)_ the unparsed body of the request as a string
   * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
-  * `lambdaContext`: (since `1.3.0`) the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
+  * `lambdaContext`: (since `claudia-api-builder 1.3.0`) the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
   * `context`: a key-value map of elements from the API Gateway context, see the [$context variable](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference) documentation for more info on individual fields 
      * `method`: HTTP invocation method
      * `path`: the active resource path (will include generic path components, eg /people/{name})
@@ -192,6 +194,7 @@ claudia update --custom-message Ping
 
 To see this in action, see the [Post-deploy configuration](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy-configuration) example project.
 
+Note that the sequence of post-deployment steps is not guaranteed. Create isolated steps, don't assume any particular order between them.
 
 ### Adding generic post-deploy steps
 
@@ -215,6 +218,8 @@ api.addPostDeployStep(stepName, function (commandLineOptions, lambdaProperties, 
   * `apiGatewayPromise`: a promisified version of the ApiGateway SDK (so instead of `createDeployment` that requires a callback, you can use `createDeploymentPromise` that returns a `Promise`). This object also takes care of AWS rate limits and automatically retries in case of `TooManyRequests` exceptions, so if you want to execute API gateway configuration calls from the post-deploy step, it's generally better to use this object instead of creating your own service instance. 
 
 The post-deploy step method can return a string or an object, or a Promise returning a string or an object. If it returns a Promise, the deployment will pause until the Promise resolves. In case of multiple post-deployment steps, they get executed in sequence, not concurrently. Any values returned from the method, or resolved by the Promise, will be included in the final installation report presented to the users. So you can take advantage of this, for example, to provide configuration information for third-party components that users need to set up manually.
+
+Note that the sequence of post-deployment steps is not guaranteed. Create isolated steps, don't assume any particular order between them.
 
 To see this in action, see the [Post-deploy](https://github.com/claudiajs/example-projects/tree/master/web-api-postdeploy) example project.
 
