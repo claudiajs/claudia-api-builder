@@ -603,4 +603,20 @@ describe('ApiBuilder', function () {
 			});
 		});
 	});
+	describe('lambda context control', function () {
+		it('sets the flag to kill the node vm without waiting for the event loop to empty after serializing context to request', function () {
+			var apiRequest = {
+					context: {
+						path: '/test',
+						method: 'GET'
+					},
+					queryString: {
+						a: 'b'
+					}
+				};
+			underTest.get('/test', requestHandler);
+			underTest.router(apiRequest, lambdaContext);
+			expect(lambdaContext.callbackWaitsForEmptyEventLoop).toBe(false);
+		});
+	});
 });

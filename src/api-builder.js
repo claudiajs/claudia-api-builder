@@ -41,6 +41,7 @@ module.exports = function ApiBuilder(components) {
 		},
 		routeEvent = function (event, context /*, callback*/) {
 			var handler, result, path;
+			context.callbackWaitsForEmptyEventLoop = false;
 			if (event && event.context && event.context.path && event.context.method) {
 				path = event.context.path;
 				if (event.context.method === 'OPTIONS' && customCorsHandler) {
