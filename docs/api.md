@@ -260,7 +260,7 @@ api.get('/hello', function (request) {...}, {invokeWithCredentials: 'arn:aws:iam
 
 ### Using custom authorizers
 
-_since: claudia-api-builder 1.6.0, claudia 1.7.0_
+_since: claudia-api-builder 1.6.0, claudia 1.7.1_
 
 You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) with your API by registering the authorizer using `api.registerAuthorizer`, and then referencing the authorizer by name in the `customAuthorizer` flag of the request handler options. You can register the authorizer in several ways:
 
