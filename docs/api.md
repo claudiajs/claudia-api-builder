@@ -258,6 +258,54 @@ api.get('/hello', function (request) {...}, {invokeWithCredentials: true} );
 api.get('/hello', function (request) {...}, {invokeWithCredentials: 'arn:aws:iam::123456789012:role/apigAwsProxyRole'} );
 ```
 
+### Using custom authorizers
+
+_since: claudia-api-builder 1.6.0, claudia 1.7.0_
+
+You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) with your API by registering the authorizer using `api.registerAuthorizer`, and then referencing the authorizer by name in the `customAuthorizer` flag of the request handler options. You can register the authorizer in several ways:
+
+```javascript
+api.registerAuthorizer(name, options);
+```
+
+ * `name`: `string` &ndash; the name for this authorizer
+ * `option`: `object` &ndash; a key-value map containing the following properties
+   * `lambdaName` &ndash; the name of a Lambda function for the authorizer. Mandatory unless `lambdaArn` is provided.
+   * `lambdaArn` &ndash; full ARN of a Lambda function for the authorizer. Useful to wire up authorizers in third-party AWS accounts. If used, don't specify `lambdaName` or `lambdaVersion`.
+   * `lambdaVersion` &ndash; _optional_. Additional qualifier for the Lambda authorizer execution. Can be a string version alias, a numerical version or `true`. if `true`, the API will pass the current stage name as the qualifier. This allows you to use different versions of the authorizer for different versions of the API, for example for testing and production. If not defined, the latest version of the Lambda authorizer will be used for all stages of the API.
+   * `headerName`: `string` &ndash; _optional_ the header name that contains the authentication token. If not specified, Claudia will use the `Authorization` header
+   * `validationExpression`: `string` &ndash; _optional_ a regular expression to validate authentication tokens
+   * `credentials`: `string` &ndash; _optional_ an IAM role ARN for the credentials used to invoke the authorizer
+   * `resultTtl`: `int` &ndash; _optional_ period (in seconds) API gateway is allowed to cache policies returned by the custom authorizer
+
+
+Here are a few examples:
+
+```javascript
+// use always the latest version of a Lambda in the same AWS account, 
+// authenticate with the Authorization header
+api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda' })
+
+// use always the latest version of a Lambda in the same AWS account, 
+// authenticate with the UserToken header
+api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda', headerName: 'UserToken' })
+
+// use the authorizer version corresponding to the API stage 
+api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda', lambdaVersion: true })
+
+// use a hard-coded lambda version for all stages
+api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda', lambdaVersion: '12' })
+
+// use a third-party authorizer with an ARN and a specific header
+api.registerAuthorizer('companyAuth', { lambdaArn: 'arn:aws:lambda:us-east-1:123456789012:function:MagicAuth', headerName: 'MagicAuth' })
+``` 
+
+When the authorizer is specified using `lambdaName`, Claudia will automatically assign the correct access privileges so that your API can call the authorizer. When the authorizer is specified using `lambdaArn`, you need to ensure the right privileges exist between the API and the third-party authorizer Lambda function.
+
+Note that `request.context.authorizerPrincipalId` will contain the principal ID passed by the custom authorizer automatically.
+
+Check out the [Custom Authorizers Example](https://github.com/claudiajs/example-projects/tree/master/custom-authorizers) to see this in action.
+
 ## Intercepting requests
 
 _since 1.5.0_
