@@ -8,6 +8,7 @@ module.exports = function ApiBuilder(components) {
 		postDeploySteps = {},
 		customCorsHeaders,
 		unsupportedEventCallback,
+		authorizers,
 		interceptCallback,
 		prompter = (components && components.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
@@ -99,6 +100,9 @@ module.exports = function ApiBuilder(components) {
 		}
 		if (customCorsHeaders) {
 			result.corsHeaders = customCorsHeaders;
+		}
+		if (authorizers) {
+			result.authorizers = authorizers;
 		}
 		return result;
 	};
@@ -216,5 +220,20 @@ module.exports = function ApiBuilder(components) {
 		return utils.Promise.map(steps, executeStepMapper, {concurrency: 1}).then(function () {
 			return stepResults;
 		});
+	};
+	self.registerAuthorizer = function (name, config) {
+		if (!name || typeof name !== 'string' || name.length === 0) {
+			throw new Error('Authorizer must have a name');
+		}
+		if (!config || typeof config !== 'object' || Object.keys(config).length === 0) {
+			throw new Error('Authorizer ' + name + ' configuration is invalid');
+		}
+		if (!authorizers) {
+			authorizers = {};
+		}
+		if (authorizers[name]) {
+			throw new Error('Authorizer ' + name + ' is already defined');
+		}
+		authorizers[name] = config;
 	};
 };

@@ -619,4 +619,45 @@ describe('ApiBuilder', function () {
 			expect(lambdaContext.callbackWaitsForEmptyEventLoop).toBe(false);
 		});
 	});
+	describe('registerAuthorizer', function () {
+		it('creates no authorizers by default', function () {
+			expect(underTest.apiConfig().authorizers).toBeUndefined();
+		});
+		it('can register an authorizer by name', function () {
+			underTest.registerAuthorizer('first', { lambdaName: 'blob1' });
+			expect(underTest.apiConfig().authorizers).toEqual({
+				first: { lambdaName: 'blob1' }
+			});
+		});
+		it('can register multiple authorizers by name', function () {
+			underTest.registerAuthorizer('first', { lambdaName: 'blob1' });
+			underTest.registerAuthorizer('second', { lambdaName: 'blob2' });
+			expect(underTest.apiConfig().authorizers).toEqual({
+				first: { lambdaName: 'blob1' },
+				second: { lambdaName: 'blob2' }
+			});
+		});
+		it('complains about the same name used twice', function () {
+			underTest.registerAuthorizer('first', { lambdaName: 'blob1' });
+			expect(function () {
+				underTest.registerAuthorizer('first', { lambdaName: 'blob2' });
+			}).toThrowError('Authorizer first is already defined');
+		});
+		it('complains about no config authorizers', function () {
+			expect(function () {
+				underTest.registerAuthorizer('first', {});
+			}).toThrowError('Authorizer first configuration is invalid');
+			expect(function () {
+				underTest.registerAuthorizer('first');
+			}).toThrowError('Authorizer first configuration is invalid');
+		});
+		it('complains about nameless authorizers', function () {
+			expect(function () {
+				underTest.registerAuthorizer('', {});
+			}).toThrowError('Authorizer must have a name');
+			expect(function () {
+				underTest.registerAuthorizer();
+			}).toThrowError('Authorizer must have a name');
+		});
+	});
 });

@@ -1,5 +1,9 @@
 # Release history
 
+## 1.6.0, 26 August 2016
+
+- support for custom authorizers
+
 ## 1.5.1, 4 August 2016
 
 - by default, API processing stops the node VM using the [callbackWaitsForEmptyEventLoop](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) Lambda context parameter. This is to prevent runaway node.js events caused by third party libs causing the Lambda VM to become stuck after a request completes. If you really want the VM execution to continue until the event loop empties, even after your API process is done, then set `lambdaContext.callbackWaitsForEmptyEventLoop` to `true` in your request handler.
