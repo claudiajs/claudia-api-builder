@@ -431,11 +431,13 @@ describe('ApiBuilder', function () {
 			hook = jasmine.createSpy().and.returnValue(postPromise);
 		});
 		it('can set up a single post-install hook', function (done) {
-			underTest.addPostDeployStep('first', hook);
+			underTest.addPostDeployStep('first', function (opts, config, utils) {
+				expect(opts).toEqual({a: 1});
+				expect(config).toEqual({c: 2});
+				expect(utils).toEqual({Promise: Promise});
+				done();
+			});
 			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise});
-			Promise.resolve().then(function () {
-				expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
-			}).then(done);
 		});
 		it('complains if the first argument is not a step name', function () {
 			expect(function () {
@@ -503,11 +505,16 @@ describe('ApiBuilder', function () {
 				expect(hook2).not.toHaveBeenCalled();
 			});
 			it('does not execute the second hook until the first resolves', function (done) {
-				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, done.fail);
-				Promise.resolve().then(function () {
-					expect(hook).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise});
+				hook.and.callFake(function (opts, config, utils) {
+
+					expect(opts).toEqual({a: 1});
+					expect(config).toEqual({c: 2});
+					expect(utils).toEqual({Promise: Promise});
 					expect(hook2).not.toHaveBeenCalled();
-				}).then(done, done.fail);
+					done();
+					return postPromise;
+				});
+				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, done.fail);
 			});
 			it('executes the second hook after the first one resolves', function (done) {
 				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(done.fail, function () {
