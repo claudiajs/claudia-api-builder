@@ -130,8 +130,8 @@ module.exports = function ApiBuilder(components) {
 		this.response = responseBody;
 		this.headers = responseHeaders;
 	};
-  self.ApiErrors = require('claudia-api-errors');
-  self.unsupportedEvent = function (callback) {
+	self.ApiErrors = require('claudia-api-errors');
+	self.unsupportedEvent = function (callback) {
 		unsupportedEventCallback = callback;
 	};
 	self.intercept = function (callback) {
