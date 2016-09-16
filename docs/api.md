@@ -339,3 +339,8 @@ api.unsupportedEvent(callback);
 
 Note that the callback function completely takes over the responsibility for ending the Lambda context in this case. API Builder does not provide any shortcuts for Promises or any other features apart from directly passing the event and the context to the unsupported event handler.
 
+## Custom response errors
+
+_since claudia 1.9.0_
+
+Check out the [API Errors Usage](https://github.com/phips28/claudia-api-errors#readme). 
