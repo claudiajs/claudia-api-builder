@@ -32,6 +32,9 @@
     "test": "node spec/support/jasmine-runner.js"
   },
   "author": "Gojko Adzic <gojko@gojko.com> http://gojko.net",
+  "dependencies": {
+    "claudia-api-errors": "git://github.com/phips28/claudia-api-errors"
+  },
   "devDependencies": {
     "bluebird": "^3.3.0",
     "jasmine": "2.4.1",
