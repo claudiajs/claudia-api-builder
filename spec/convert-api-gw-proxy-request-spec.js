@@ -1,5 +1,5 @@
 /*global require, describe, it, expect, beforeEach */
-var underTest = require('../src/extend-api-gw-proxy-request');
+var underTest = require('../src/convert-api-gw-proxy-request');
 describe('extendApiGWProxyRequest', function () {
 	'use strict';
 	var apiGWRequest;
@@ -32,7 +32,7 @@ describe('extendApiGWProxyRequest', function () {
 				'authorizer' : {
 					'principalId' : 'abc'
 				},
-				'httpMethod' : 'GET',
+				'httpMethod' : 'POST',
 				'identity' : {
 					'accountId' : null,
 					'userAgent' : 'curl/7.43.0',
@@ -58,16 +58,25 @@ describe('extendApiGWProxyRequest', function () {
 			expect(underTest(apiGWRequest).v).toEqual(3);
 		});
 	});
+	it('does not modify the original request', function () {
+		var original = JSON.parse(JSON.stringify(apiGWRequest));
+		underTest(apiGWRequest);
+		expect(apiGWRequest).toEqual(original);
+	});
+	describe('pathParams', function () {
+		it('copies pathParameters into pathParams', function () {
+			expect(underTest(apiGWRequest).pathParams).toEqual({
+				'name' : 'sub1'
+			});
+		});
+		it('uses empty object if the original path params are not defined', function () {
+			apiGWRequest.pathParameters = null;
+			expect(underTest(apiGWRequest).pathParams).toEqual({});
+		});
+	});
 	describe('queryString', function () {
 		it('copies queryStringParameters into queryString', function () {
 			expect(underTest(apiGWRequest).queryString).toEqual({
-				'a' : 'b',
-				'c' : 'd',
-				'code' : '403'
-			});
-		});
-		it('leaves the old values intact', function () {
-			expect(underTest(apiGWRequest).queryStringParameters).toEqual({
 				'a' : 'b',
 				'c' : 'd',
 				'code' : '403'
@@ -84,18 +93,13 @@ describe('extendApiGWProxyRequest', function () {
 				'lambdaVersion' : 'latest'
 			});
 		});
-		it('leaves the old values intact', function () {
-			expect(underTest(apiGWRequest).stageVariables).toEqual({
-				'lambdaVersion' : 'latest'
-			});
-		});
 		it('uses empty object original stage variables are not defined', function () {
 			apiGWRequest.stageVariables = null;
 			expect(underTest(apiGWRequest).env).toEqual({});
 		});
 	});
 	describe('headers', function () {
-		it('leaves headers intact', function () {
+		it('copies headers intact', function () {
 			expect(underTest(apiGWRequest).headers).toEqual({
 				'Authorization' : 'abc-DeF',
 				'X-Forwarded-Port' : '443',
@@ -154,7 +158,7 @@ describe('extendApiGWProxyRequest', function () {
 				beforeEach(function () {
 					apiGWRequest.headers['Content-Type'] = contentType;
 				});
-				it('is unchanged', function () {
+				it('is just copied', function () {
 					expect(underTest(apiGWRequest).body).toEqual('birthyear=1905&press=%20OK%20');
 				});
 				it('is a blank string if the original body is null ', function () {
@@ -194,5 +198,53 @@ describe('extendApiGWProxyRequest', function () {
 			});
 		});
 
+	});
+	describe('rawBody', function () {
+		['application/json', 'text/plain', 'text/xml', null, '', undefined].forEach(function (contentType) {
+			describe('when content type is "' + contentType + '"', function () {
+				beforeEach(function () {
+					apiGWRequest.headers['Content-Type'] = contentType;
+					apiGWRequest.body = '{"a": "b"}';
+				});
+				it('contains the original copy of the body', function ()  {
+					expect(underTest(apiGWRequest).rawBody).toEqual('{"a": "b"}');
+				});
+				it('is a blank string if the original body was null', function () {
+					apiGWRequest.body = null;
+					expect(underTest(apiGWRequest).rawBody).toEqual('');
+
+				});
+			});
+		});
+	});
+	describe('lambdaContext', function () {
+		it('contains the value of the second argument, if provided', function () {
+			expect(underTest(apiGWRequest, {a: 'b123'}).lambdaContext).toEqual({a: 'b123'});
+		});
+	});
+	describe('proxyRequest', function () {
+		it('contains the original API GW Proxy request', function () {
+			expect(underTest(apiGWRequest).proxyRequest).toEqual(apiGWRequest);
+		});
+	});
+	describe('context', function () {
+		describe('method', function () {
+			it('contains the http method', function () {
+				expect(underTest(apiGWRequest).context.method).toEqual('POST');
+			});
+			it('is always uppercase', function () {
+				apiGWRequest.requestContext.httpMethod = 'opTiOnS';
+				expect(underTest(apiGWRequest).context.method).toEqual('OPTIONS');
+			});
+			it('is GET if httpMethod is not specified', function () {
+				apiGWRequest.requestContext.httpMethod = null;
+				expect(underTest(apiGWRequest).context.method).toEqual('GET');
+			});
+		});
+		describe('path', function () {
+			it('contains the request path', function () {
+				expect(underTest(apiGWRequest).context.path).toEqual('/hello/{name}');
+			});
+		});
 	});
 });
