@@ -11,6 +11,7 @@ module.exports = function ApiBuilder(components) {
 		customCorsHeaders,
 		unsupportedEventCallback,
 		authorizers,
+		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		interceptCallback,
 		prompter = (components && components.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
@@ -39,33 +40,43 @@ module.exports = function ApiBuilder(components) {
 			}
 			return handlerResult;
 		},
-		isThenable = function (param) {
-			return param && param.then && (typeof param.then === 'function');
+		routeCors = function (request) {
+			return Promise.resolve().then(function () {
+				if (customCorsHandler === false) {
+					return '';
+				} else if (customCorsHandler) {
+					// todo: translate to header value
+					return customCorsHandler(request);
+				} else {
+					return '*';
+				}
+			}).then(function (corsOrigin) {
+				return {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': corsOrigin,
+						'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
+						'Access-Control-Allow-Methods': corsOrigin && supportedMethods.join(',') + ',OPTIONS'
+					},
+					body: ''
+				};
+			});
 		},
 		routeEvent = function (routingInfo, event, context) {
-			var handler, result;
+			var handler;
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			if (routingInfo.method === 'OPTIONS' && customCorsHandler) {
-				// todo: translate to header value
-				return context.done(null, customCorsHandler(event));
+			if (routingInfo.method === 'OPTIONS') {
+				return routeCors(event);
 			}
 			handler = routes[routingInfo.path] && routes[routingInfo.path][routingInfo.method];
 			if (handler) {
-				if (requestFormat === 'CLAUDIA_API_BUILDER') {
-					event.lambdaContext = context;
-				}
-				result = handler(event, context);
-				if (isThenable(result)) {
-					return result.then(function (promiseResult) {
-						context.done(null, packResult(promiseResult, routingInfo.path, routingInfo.method));
-					}, function (promiseError) {
-						context.done(promiseError);
-					});
-				} else {
-					context.done(null, packResult(result, routingInfo.path, routingInfo.method));
-				}
+				return Promise.resolve().then(function () {
+					return handler(event, context);
+				}).then(function (result) {
+					return packResult(result, routingInfo.path, routingInfo.method);
+				});
 			} else {
 				return Promise.reject('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
 			}
@@ -99,7 +110,7 @@ module.exports = function ApiBuilder(components) {
 				});
 			}
 		};
-	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'].forEach(function (method) {
+	supportedMethods.forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
 			var pathPart = route.replace(/^\//, ''),
 				canonicalRoute = route;
@@ -173,7 +184,9 @@ module.exports = function ApiBuilder(components) {
 			} else {
 				routingInfo = getRequestRoutingInfo(modifiedRequest);
 				if (routingInfo && routingInfo.path && routingInfo.method) {
-					return routeEvent(routingInfo, modifiedRequest, context, callback);
+					return routeEvent(routingInfo, modifiedRequest, context, callback).then(function (result) {
+						context.done(null, result);
+					});
 				} else {
 					if (unsupportedEventCallback) {
 						unsupportedEventCallback(event, context, callback);
@@ -195,6 +208,7 @@ module.exports = function ApiBuilder(components) {
 	};
 	self.router = function (event, context, callback) {
 		requestFormat = 'DEPRECATED';
+		event.lambdaContext = context;
 		console.log('.router is deprecated and will be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
 		return self.proxyRouter(event, context, callback);
 	};

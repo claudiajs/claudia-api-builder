@@ -268,7 +268,7 @@ describe('ApiBuilder', function () {
 					expect(lambdaContext.done).not.toHaveBeenCalled();
 					done();
 				});
-				underTest.router({a: 1}, lambdaContext, fakeCallback);
+				underTest.proxyRouter({a: 1}, lambdaContext, fakeCallback);
 			});
 		});
 		describe('intercepting calls', function () {
@@ -419,6 +419,11 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('CORS handling', function () {
+		var apiRequest;
+		beforeEach(function () {
+			apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
+			underTest.get('/existing', requestHandler);
+		});
 		it('does not set corsHandlers unless corsOrigin called', function () {
 			expect(underTest.apiConfig().corsHandlers).toBeUndefined();
 		});
@@ -434,22 +439,80 @@ describe('ApiBuilder', function () {
 			underTest.corsOrigin('origin');
 			expect(underTest.apiConfig().corsHandlers).toBe(true);
 		});
+
+		it('routes OPTIONS to return the the default configuration if no parameters set', function (done) {
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
+		});
+		it('routes OPTIONS to return no header values if origin is set to false', function (done) {
+			underTest.corsOrigin(false);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '',
+						'Access-Control-Allow-Headers': '',
+						'Access-Control-Allow-Methods': ''
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
+		});
 		it('routes OPTIONS to return the result of a custom CORS handler in the Allowed-Origins header', function (done) {
-			var corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin'),
-				apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
-			underTest.get('/existing', requestHandler);
+			var corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin');
 			underTest.corsOrigin(corsHandler);
 			underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(corsHandler).toHaveBeenCalledWith(apiRequest);
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin');
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': 'custom-origin',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+					},
+					body: ''
+				});
 			}).then(done, done.fail);
 		});
+		it('routes OPTIONS to return the result of a promise resolved by the CORS handler', function (done) {
+			var corsPromise = Promise.resolve('custom-origin'),
+				corsHandler = jasmine.createSpy('corsHandler').and.returnValue(corsPromise);
+			underTest.corsOrigin(corsHandler);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(corsHandler).toHaveBeenCalledWith(apiRequest);
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': 'custom-origin',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
+
+		});
 		it('routes OPTIONS to return the string set by corsOrigin', function (done) {
-			var apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
-			underTest.get('/existing', requestHandler);
 			underTest.corsOrigin('custom-origin-string');
 			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin-string');
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': 'custom-origin-string',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+					},
+					body: ''
+				});
 			}).then(done, done.fail);
 		});
 		it('does not set corsHeaders unless corsHeaders called', function () {
@@ -463,6 +526,20 @@ describe('ApiBuilder', function () {
 			expect(function () {
 				underTest.corsHeaders(function () { });
 			}).toThrow('corsHeaders only accepts strings');
+		});
+		it('uses corsHeaders when routing OPTIONS', function (done) {
+			underTest.corsHeaders('X-Api-Request');
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Headers': 'X-Api-Request',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
 		});
 	});
 	describe('post install hooks', function () {
