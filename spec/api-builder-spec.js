@@ -168,7 +168,7 @@ describe('ApiBuilder', function () {
 		});
 		it('complains about an unsupported call', function (done) {
 			underTest.router({}, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+				expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
 			}).then(done, done.fail);
 		});
 		it('can route calls to a single GET method', function (done) {
@@ -256,7 +256,7 @@ describe('ApiBuilder', function () {
 		describe('unsupported event format', function () {
 			it('causes lambda context to complete with error if no custom handler', function (done) {
 				underTest.router({}, lambdaContext).then(function () {
-					expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+					expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
 				}).then(done, done.fail);
 			});
 			it('calls custom handler if provided', function (done) {
