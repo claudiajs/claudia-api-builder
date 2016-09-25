@@ -1,4 +1,4 @@
-/*global describe, it, expect, jasmine, require, beforeEach*/
+/*global describe, it, expect, jasmine, require, beforeEach */
 var ApiBuilder = require('../src/api-builder'),
 	Promise = require('bluebird');
 describe('ApiBuilder', function () {
@@ -81,7 +81,7 @@ describe('ApiBuilder', function () {
 	});
 	describe('routing methods', function () {
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
-			it('can route calls to a ' + method + '  method', function () {
+			it('can route calls to a ' + method + '  method', function (done) {
 				var apiRequest = {
 					context: {
 						path: '/test',
@@ -92,9 +92,10 @@ describe('ApiBuilder', function () {
 					}
 				};
 				underTest[method.toLowerCase()]('/test', requestHandler);
-				underTest.router(apiRequest, lambdaContext);
-				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+					expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+				}).then(done, done.fail);
 			});
 		});
 	});
@@ -112,27 +113,30 @@ describe('ApiBuilder', function () {
 			};
 			underTest.get('/', requestHandler);
 		});
-		it('converts API gateway proxy requests then routes call', function () {
-			underTest.proxyRouter(proxyRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
-				lambdaContext: lambdaContext,
-				proxyRequest: proxyRequest,
-				queryString: { a: 'b' }
-			}), lambdaContext);
+		it('converts API gateway proxy requests then routes call', function (done) {
+			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+				expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+					lambdaContext: lambdaContext,
+					proxyRequest: proxyRequest,
+					queryString: { a: 'b' }
+				}), lambdaContext);
+			}).then(done, done.fail);
 		});
-		it('does not convert the request before routing if requestFormat = AWS_PROXY', function () {
+		it('does not convert the request before routing if requestFormat = AWS_PROXY', function (done) {
 			underTest.setRequestFormat('AWS_PROXY');
-			underTest.proxyRouter(proxyRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext);
+			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+				expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext);
+			}).then(done, done.fail);
 		});
-		it('converts the request if request format = CLAUDIA_API_BUILDER', function () {
+		it('converts the request if request format = CLAUDIA_API_BUILDER', function (done) {
 			underTest.setRequestFormat('CLAUDIA_API_BUILDER');
-			underTest.proxyRouter(proxyRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
-				lambdaContext: lambdaContext,
-				proxyRequest: proxyRequest,
-				queryString: { a: 'b' }
-			}), lambdaContext);
+			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+				expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+					lambdaContext: lambdaContext,
+					proxyRequest: proxyRequest,
+					queryString: { a: 'b' }
+				}), lambdaContext);
+			}).then(done, done.fail);
 		});
 	});
 	describe('routing calls', function () {
@@ -149,78 +153,91 @@ describe('ApiBuilder', function () {
 				}
 			};
 		});
-		it('can route to /', function () {
+		it('can route to /', function (done) {
 			underTest.get('/', postRequestHandler);
 			apiRequest.context.path = '/';
-			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+			}).then(done, done.fail);
 		});
-		it('complains about an unsuported route', function () {
+		it('complains about an unsuported route', function (done) {
 			apiRequest.context.path = '/no';
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no');
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no');
+			}).then(done, done.fail);
 		});
-		it('complains about an unsupported call', function () {
-			underTest.router({}, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+		it('complains about an unsupported call', function (done) {
+			underTest.router({}, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+			}).then(done, done.fail);
 		});
-		it('can route calls to a single GET method', function () {
-			underTest.router(apiRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+		it('can route calls to a single GET method', function (done) {
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			}).then(done, done.fail);
 		});
-		it('can route calls in mixed case', function () {
+		it('can route calls in mixed case', function (done) {
 			underTest.get('/CamelCase', postRequestHandler);
 			apiRequest.context.path = '/CamelCase';
-			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+			}).then(done, done.fail);
 		});
-		it('can route calls configured without a slash', function () {
+		it('can route calls configured without a slash', function (done) {
 			underTest.post('echo', postRequestHandler);
 			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			expect(requestHandler).not.toHaveBeenCalled();
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			}).then(done, done.fail);
 		});
-		it('can route to multiple methods', function () {
+		it('can route to multiple methods', function (done) {
 			underTest.post('/echo', postRequestHandler);
 			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			expect(requestHandler).not.toHaveBeenCalled();
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			}).then(done, done.fail);
 		});
-		it('can route to multiple routes', function () {
+		it('can route to multiple routes', function (done) {
 			underTest.post('/echo2', postRequestHandler);
 			apiRequest.context.path = '/echo2';
 			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			expect(requestHandler).not.toHaveBeenCalled();
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				expect(requestHandler).not.toHaveBeenCalled();
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
+			}).then(done, done.fail);
 		});
-		it('can handle synchronous exceptions in the routed method', function () {
+		it('can handle synchronous exceptions in the routed method', function (done) {
 			requestHandler.and.throwError('Error');
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
+			}).then(done, done.fail);
 		});
-		it('can handle successful synchronous results from the request handler', function () {
+		it('can handle successful synchronous results from the request handler', function (done) {
 			requestHandler.and.returnValue({hi: 'there'});
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
+			}).then(done, done.fail);
 		});
 		it('handles response promises without resolving', function (done) {
 			requestHandler.and.returnValue(requestPromise);
-			underTest.router(apiRequest, lambdaContext);
-			Promise.resolve().then(function () { /* trick async execution to wait for the previous promise cycle */
+			underTest.router(apiRequest, lambdaContext).then(done.fail, done.fail);
+			Promise.resolve().then(function () {
+				expect(requestHandler).toHaveBeenCalled();
 				expect(lambdaContext.done).not.toHaveBeenCalled();
-			}).then(done, done.fail);
+				done();
+			});
 		});
-		it('checks that .then is actually a function to distinguish promises from false positives', function () {
+		it('checks that .then is actually a function to distinguish promises from false positives', function (done) {
 			requestHandler.and.returnValue({then: 1});
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, {then: 1});
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {then: 1});
+			}).then(done, done.fail);
 		});
 		it('handles request promise rejecting', function (done) {
 			requestHandler.and.returnValue(requestPromise);
@@ -237,9 +254,10 @@ describe('ApiBuilder', function () {
 			requestResolve({hi: 'there'});
 		});
 		describe('unsupported event format', function () {
-			it('causes lambda context to complete with error if no custom handler', function () {
-				underTest.router({}, lambdaContext);
-				expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+			it('causes lambda context to complete with error if no custom handler', function (done) {
+				underTest.router({}, lambdaContext).then(function () {
+					expect(lambdaContext.done).toHaveBeenCalledWith('event must contain context.path and context.method');
+				}).then(done, done.fail);
 			});
 			it('calls custom handler if provided', function (done) {
 				var fakeCallback = jasmine.createSpy();
@@ -269,14 +287,15 @@ describe('ApiBuilder', function () {
 					expect(lambdaContext.done).toHaveBeenCalledWith('BOOM');
 				}).then(done, done.fail);
 			});
-			it('rejects if the intercept throws an exception', function () {
+			it('rejects if the intercept throws an exception', function (done) {
 				interceptSpy.and.throwError('BOOM');
-				underTest.router(apiRequest, lambdaContext);
+				underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(requestHandler).not.toHaveBeenCalled();
 				expect(postRequestHandler).not.toHaveBeenCalled();
 				expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
+			}).then(done, done.fail);
 			});
-			it('routes the event returned from intercept', function () {
+			it('routes the event returned from intercept', function (done) {
 				interceptSpy.and.returnValue({
 					context: {
 						path: '/echo',
@@ -286,7 +305,7 @@ describe('ApiBuilder', function () {
 						c: 'd'
 					}
 				});
-				underTest.router(apiRequest, lambdaContext);
+				underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(requestHandler).not.toHaveBeenCalled();
 				expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
 					context: {
@@ -297,6 +316,7 @@ describe('ApiBuilder', function () {
 						c: 'd'
 					}
 				}), lambdaContext);
+			}).then(done, done.fail);
 			});
 			it('routes the event resolved by the intercept promise', function (done) {
 				interceptSpy.and.returnValue(Promise.resolve({
@@ -321,12 +341,13 @@ describe('ApiBuilder', function () {
 					}), lambdaContext);
 				}).then(done, done.fail);
 			});
-			it('aborts if the intercept returns a falsy value', function () {
+			it('aborts if the intercept returns a falsy value', function (done) {
 				interceptSpy.and.returnValue(false);
-				underTest.router(apiRequest, lambdaContext);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(postRequestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).not.toHaveBeenCalled();
+					expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
+				}).then(done, done.fail);
 			});
 			it('aborts if the intercept resolves with a falsy value', function (done) {
 				interceptSpy.and.returnValue(Promise.resolve(false));
@@ -346,10 +367,11 @@ describe('ApiBuilder', function () {
 			underTest.get('/error-default', requestHandler, {error: {headers: { 'content-type': 'text/plain', 'set-cookie': 'true'}}});
 			underTest.get('/error-no-default', requestHandler, {error: {headers: ['content-type', 'set-cookie']}});
 		});
-		it('handles synchronous result/header responses for headers without defaults', function () {
+		it('handles synchronous result/header responses for headers without defaults', function (done) {
 			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, {response: {hi: 'there'}, headers: {'content-type': 'text/markdown'}});
+			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {response: {hi: 'there'}, headers: {'content-type': 'text/markdown'}});
+			}).then(done, done.fail);
 		});
 		it('handles promise result/header resolutions for headers without defaults', function (done) {
 			requestHandler.and.returnValue(requestPromise);
@@ -365,30 +387,35 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 			requestResolve({hi: 'there'});
 		});
-		it('ignores headers when they are specified with defaults in success templates', function () {
+		it('ignores headers when they are specified with defaults in success templates', function (done) {
 			requestHandler.and.returnValue('hi there');
-			underTest.router({ context: { path: '/success-default', method: 'GET' } }, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, 'hi there');
+			underTest.router({ context: { path: '/success-default', method: 'GET' } }, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'hi there');
+			}).then(done, done.fail);
 		});
-		it('reports an error if apiresponse is used without enumerated headers', function () {
+		it('reports an error if apiresponse is used without enumerated headers', function (done) {
 			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({context: {path: '/no-headers', method: 'GET'}}, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse without enumerating headers in GET /no-headers');
+			underTest.router({context: {path: '/no-headers', method: 'GET'}}, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse without enumerating headers in GET /no-headers');
+			}).then(done, done.fail);
 		});
-		it('reports an error if apiresponse is used with headers using defaults', function () {
+		it('reports an error if apiresponse is used with headers using defaults', function (done) {
 			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({context: {path: '/success-default', method: 'GET'}}, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse with default header values in GET /success-default');
+			underTest.router({context: {path: '/success-default', method: 'GET'}}, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse with default header values in GET /success-default');
+			}).then(done, done.fail);
 		});
-		it('reports an error if the custom header is not enumerated', function () {
+		it('reports an error if the custom header is not enumerated', function (done) {
 			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-length': '102'}));
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith('unexpected header content-length in GET /success-no-default');
+			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('unexpected header content-length in GET /success-no-default');
+			}).then(done, done.fail);
 		});
-		it('ignores headers when they are specified with defaults in error templates', function () {
+		it('ignores headers when they are specified with defaults in error templates', function (done) {
 			requestHandler.and.throwError('Abort');
-			underTest.router({ context: { path: '/error-default', method: 'GET' } }, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(new Error('Abort'));
+			underTest.router({ context: { path: '/error-default', method: 'GET' } }, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(new Error('Abort'));
+			}).then(done, done.fail);
 		});
 	});
 	describe('CORS handling', function () {
@@ -407,21 +434,23 @@ describe('ApiBuilder', function () {
 			underTest.corsOrigin('origin');
 			expect(underTest.apiConfig().corsHandlers).toBe(true);
 		});
-		it('routes OPTIONS to return the result of a custom CORS handler in the Allowed-Origins header', function () {
+		it('routes OPTIONS to return the result of a custom CORS handler in the Allowed-Origins header', function (done) {
 			var corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin'),
 				apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
 			underTest.get('/existing', requestHandler);
 			underTest.corsOrigin(corsHandler);
-			underTest.router(apiRequest, lambdaContext);
-			expect(corsHandler).toHaveBeenCalledWith(apiRequest);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin');
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(corsHandler).toHaveBeenCalledWith(apiRequest);
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin');
+			}).then(done, done.fail);
 		});
-		it('routes OPTIONS to return the string set by corsOrigin', function () {
+		it('routes OPTIONS to return the string set by corsOrigin', function (done) {
 			var apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
 			underTest.get('/existing', requestHandler);
 			underTest.corsOrigin('custom-origin-string');
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin-string');
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'custom-origin-string');
+			}).then(done, done.fail);
 		});
 		it('does not set corsHeaders unless corsHeaders called', function () {
 			expect(underTest.apiConfig().corsHeaders).toBeUndefined();
@@ -628,7 +657,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('lambda context control', function () {
-		it('sets the flag to kill the node vm without waiting for the event loop to empty after serializing context to request', function () {
+		it('sets the flag to kill the node vm without waiting for the event loop to empty after serializing context to request', function (done) {
 			var apiRequest = {
 					context: {
 						path: '/test',
@@ -639,8 +668,10 @@ describe('ApiBuilder', function () {
 					}
 				};
 			underTest.get('/test', requestHandler);
-			underTest.router(apiRequest, lambdaContext);
-			expect(lambdaContext.callbackWaitsForEmptyEventLoop).toBe(false);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.callbackWaitsForEmptyEventLoop).toBe(false);
+			}).then(done, done.fail);
+
 		});
 	});
 	describe('registerAuthorizer', function () {

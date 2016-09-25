@@ -1,4 +1,4 @@
-/*global module, require */
+/*global module, require, Promise */
 var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request');
 module.exports = function ApiBuilder(components) {
 	'use strict';
@@ -94,10 +94,19 @@ module.exports = function ApiBuilder(components) {
 			}
 		},
 		getRequest = function (event, context) {
-			if (requestFormat === 'AWS_PROXY') {
+			if (requestFormat === 'AWS_PROXY' || requestFormat === 'DEPRECATED') {
 				return event;
 			} else {
 				return convertApiGWProxyRequest(event, context);
+			}
+		},
+		executeInterceptor = function (request, context) {
+			if (!interceptCallback) {
+				return Promise.resolve(request);
+			} else {
+				return Promise.resolve().then(function () {
+					return interceptCallback(request, context);
+				});
 			}
 		};
 	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'].forEach(function (method) {
@@ -161,7 +170,18 @@ module.exports = function ApiBuilder(components) {
 		interceptCallback = callback;
 	};
 	self.proxyRouter = function (event, context, callback) {
-		return self.router(getRequest(event, context), context, callback);
+		var request = getRequest(event, context),
+			handleError = function (e) {
+				context.done(e);
+			};
+		return executeInterceptor(request, context).then(function (modifiedRequest) {
+			if (!modifiedRequest) {
+				return context.done(null, null);
+			} else {
+				return routeEvent(modifiedRequest, context, callback);
+			}
+		}).catch(handleError);
+
 	};
 	self.setRequestFormat = function (newFormat) {
 		var supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
@@ -172,30 +192,8 @@ module.exports = function ApiBuilder(components) {
 		}
 	};
 	self.router = function (event, context, callback) {
-		var result,
-			handleResult = function (r) {
-				if (!r) {
-					return context.done(null, null);
-				}
-				return routeEvent(r, context, callback);
-			},
-			handleError = function (e) {
-				context.done(e);
-			};
-		if (!interceptCallback) {
-			return routeEvent(event, context, callback);
-		}
-
-		try {
-			result = interceptCallback(event);
-			if (isThenable(result)) {
-				return result.then(handleResult, handleError);
-			} else {
-				handleResult(result);
-			}
-		} catch (e) {
-			handleError(e);
-		}
+		requestFormat = 'DEPRECATED';
+		return self.proxyRouter(event, context, callback);
 	};
 	self.addPostDeployStep = function (name, stepFunction) {
 		if (typeof name !== 'string') {
