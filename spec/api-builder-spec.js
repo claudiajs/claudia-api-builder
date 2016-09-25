@@ -1,4 +1,4 @@
-/*global describe, it, expect, jasmine, require, beforeEach */
+/*global describe, it, expect, jasmine, require, beforeEach*/
 var ApiBuilder = require('../src/api-builder'),
 	Promise = require('bluebird');
 describe('ApiBuilder', function () {
@@ -37,8 +37,8 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('configuration', function () {
-		it('carries version 2', function () {
-			expect(underTest.apiConfig().version).toEqual(2);
+		it('carries version 3', function () {
+			expect(underTest.apiConfig().version).toEqual(3);
 		});
 		it('can configure a single GET method', function () {
 			underTest.get('/echo', requestHandler);
@@ -93,29 +93,46 @@ describe('ApiBuilder', function () {
 				};
 				underTest[method.toLowerCase()]('/test', requestHandler);
 				underTest.router(apiRequest, lambdaContext);
-				expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 			});
 		});
 	});
-	describe('generic config', function () {
-		it('adds the lambda context to event.lambdaContext', function () {
-			var apiRequest = {
-				context: {
-					path: '/',
-					method: 'GET'
+	describe('proxyRouter', function () {
+		var proxyRequest;
+		beforeEach(function () {
+			proxyRequest = {
+				queryStringParameters : {
+					'a' : 'b'
 				},
-				queryString: {
-					a: 'b'
+				requestContext: {
+					resourcePath: '/',
+					httpMethod: 'GET'
 				}
 			};
 			underTest.get('/', requestHandler);
-			underTest.router(apiRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith({
+		});
+		it('converts API gateway proxy requests then routes call', function () {
+			underTest.proxyRouter(proxyRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
 				lambdaContext: lambdaContext,
-				context: { path: '/', method: 'GET'},
+				proxyRequest: proxyRequest,
 				queryString: { a: 'b' }
-			});
+			}), lambdaContext);
+		});
+		it('does not convert the request before routing if requestFormat = AWS_PROXY', function () {
+			underTest.setRequestFormat('AWS_PROXY');
+			underTest.proxyRouter(proxyRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext);
+		});
+		it('converts the request if request format = CLAUDIA_API_BUILDER', function () {
+			underTest.setRequestFormat('CLAUDIA_API_BUILDER');
+			underTest.proxyRouter(proxyRequest, lambdaContext);
+			expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+				lambdaContext: lambdaContext,
+				proxyRequest: proxyRequest,
+				queryString: { a: 'b' }
+			}), lambdaContext);
 		});
 	});
 	describe('routing calls', function () {
@@ -136,7 +153,7 @@ describe('ApiBuilder', function () {
 			underTest.get('/', postRequestHandler);
 			apiRequest.context.path = '/';
 			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 		});
 		it('complains about an unsuported route', function () {
 			apiRequest.context.path = '/no';
@@ -149,20 +166,20 @@ describe('ApiBuilder', function () {
 		});
 		it('can route calls to a single GET method', function () {
 			underTest.router(apiRequest, lambdaContext);
-			expect(requestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
 		it('can route calls in mixed case', function () {
 			underTest.get('/CamelCase', postRequestHandler);
 			apiRequest.context.path = '/CamelCase';
 			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 		});
 		it('can route calls configured without a slash', function () {
 			underTest.post('echo', postRequestHandler);
 			apiRequest.context.method = 'POST';
 			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			expect(requestHandler).not.toHaveBeenCalled();
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
@@ -170,7 +187,7 @@ describe('ApiBuilder', function () {
 			underTest.post('/echo', postRequestHandler);
 			apiRequest.context.method = 'POST';
 			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			expect(requestHandler).not.toHaveBeenCalled();
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
@@ -179,7 +196,7 @@ describe('ApiBuilder', function () {
 			apiRequest.context.path = '/echo2';
 			apiRequest.context.method = 'POST';
 			underTest.router(apiRequest, lambdaContext);
-			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest);
+			expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			expect(requestHandler).not.toHaveBeenCalled();
 			expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 		});
@@ -279,7 +296,7 @@ describe('ApiBuilder', function () {
 					queryString: {
 						c: 'd'
 					}
-				}));
+				}), lambdaContext);
 			});
 			it('routes the event resolved by the intercept promise', function (done) {
 				interceptSpy.and.returnValue(Promise.resolve({
@@ -301,7 +318,7 @@ describe('ApiBuilder', function () {
 						queryString: {
 							c: 'd'
 						}
-					}));
+					}), lambdaContext);
 				}).then(done, done.fail);
 			});
 			it('aborts if the intercept returns a falsy value', function () {

@@ -1,7 +1,9 @@
 /*global module, require */
+var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request');
 module.exports = function ApiBuilder(components) {
 	'use strict';
 	var self = this,
+		requestFormat = 'CLAUDIA_API_BUILDER',
 		methodConfigurations = {},
 		routes = {},
 		customCorsHandler,
@@ -41,32 +43,34 @@ module.exports = function ApiBuilder(components) {
 			return param && param.then && (typeof param.then === 'function');
 		},
 		routeEvent = function (event, context /*, callback*/) {
-			var handler, result, path;
+			var handler, result, routingInfo = getRequestRoutingInfo(event);
 			context.callbackWaitsForEmptyEventLoop = false;
-			if (event && event.context && event.context.path && event.context.method) {
-				path = event.context.path;
-				if (event.context.method === 'OPTIONS' && customCorsHandler) {
+			if (routingInfo.path && routingInfo.method) {
+				if (routingInfo.method === 'OPTIONS' && customCorsHandler) {
+					// todo: translate to header value
 					return context.done(null, customCorsHandler(event));
 				}
-				handler = routes[path] && routes[path][event.context.method];
+				handler = routes[routingInfo.path] && routes[routingInfo.path][routingInfo.method];
 				if (handler) {
 					try {
-						event.lambdaContext = context;
-						result = handler(event);
+						if (requestFormat === 'CLAUDIA_API_BUILDER') {
+							event.lambdaContext = context;
+						}
+						result = handler(event, context);
 						if (isThenable(result)) {
 							return result.then(function (promiseResult) {
-								context.done(null, packResult(promiseResult, path, event.context.method));
+								context.done(null, packResult(promiseResult, routingInfo.path, routingInfo.method));
 							}, function (promiseError) {
 								context.done(promiseError);
 							});
 						} else {
-							context.done(null, packResult(result, path, event.context.method));
+							context.done(null, packResult(result, routingInfo.path, routingInfo.method));
 						}
 					} catch (e) {
 						context.done(e);
 					}
 				} else {
-					context.done('no handler for ' + event.context.method + ' ' + event.context.path);
+					context.done('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
 				}
 			} else {
 				if (unsupportedEventCallback) {
@@ -74,6 +78,26 @@ module.exports = function ApiBuilder(components) {
 				} else {
 					context.done('event must contain context.path and context.method');
 				}
+			}
+		},
+		getRequestRoutingInfo = function (request) {
+			if (requestFormat === 'AWS_PROXY') {
+				if (!request.requestContext) {
+					return {};
+				}
+				return {
+					path: request.requestContext.resourcePath,
+					method: request.requestContext.httpMethod
+				};
+			} else {
+				return request.context || {};
+			}
+		},
+		getRequest = function (event, context) {
+			if (requestFormat === 'AWS_PROXY') {
+				return event;
+			} else {
+				return convertApiGWProxyRequest(event, context);
 			}
 		};
 	['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'].forEach(function (method) {
@@ -94,7 +118,7 @@ module.exports = function ApiBuilder(components) {
 		};
 	});
 	self.apiConfig = function () {
-		var result = {version: 2, routes: methodConfigurations};
+		var result = {version: 3, routes: methodConfigurations};
 		if (customCorsHandler !== undefined) {
 			result.corsHandlers = !!customCorsHandler;
 		}
@@ -135,6 +159,17 @@ module.exports = function ApiBuilder(components) {
 	};
 	self.intercept = function (callback) {
 		interceptCallback = callback;
+	};
+	self.proxyRouter = function (event, context, callback) {
+		return self.router(getRequest(event, context), context, callback);
+	};
+	self.setRequestFormat = function (newFormat) {
+		var supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
+		if (supportedFormats.indexOf(newFormat) >= 0) {
+			requestFormat = newFormat;
+		} else {
+			throw 'Unsupported request format ' + newFormat;
+		}
 	};
 	self.router = function (event, context, callback) {
 		var result,

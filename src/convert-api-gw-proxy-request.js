@@ -23,9 +23,31 @@ var qs = require('querystring'),
 		Object.keys(keyMappings).forEach(function (key) {
 			to[key] = from[keyMappings[key]] || {};
 		});
+	},
+	convertContext = function (requestContext) {
+		'use strict';
+		var identity = requestContext.identity || {};
+		return {
+			method: (requestContext.httpMethod || 'GET').toUpperCase(),
+			path: requestContext.resourcePath,
+			stage: requestContext.stage,
+			sourceIp: identity.sourceIp,
+			accountId: identity.accountId,
+			user: identity.user,
+			userAgent: identity.userAgent,
+			userArn: identity.userArn,
+			caller: identity.caller,
+			apiKey: identity.apiKey,
+			authorizerPrincipalId: requestContext.authorizer ? requestContext.authorizer.principalId : null,
+			cognitoAuthenticationProvider: identity.cognitoAuthenticationProvider,
+			cognitoAuthenticationType:  identity.cognitoAuthenticationType,
+			cognitoIdentityId:  identity.cognitoIdentityId,
+			cognitoIdentityPoolId: identity.cognitoIdentityPoolId
+		};
+
 	};
 
-module.exports = function extendApiGWProxyRequest(request, lambdaContext) {
+module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 	'use strict';
 	var result = {
 			v: 3,
@@ -50,22 +72,6 @@ module.exports = function extendApiGWProxyRequest(request, lambdaContext) {
 	} else {
 		result.body = result.rawBody;
 	}
-	result.context = {
-		method: (request.requestContext.httpMethod || 'GET').toUpperCase(),
-		path: request.requestContext.resourcePath,
-		stage: request.requestContext.stage,
-		sourceIp: request.requestContext.identity.sourceIp,
-		accountId: request.requestContext.identity.accountId,
-		user: request.requestContext.identity.user,
-		userAgent: request.requestContext.identity.userAgent,
-		userArn: request.requestContext.identity.userArn,
-		caller: request.requestContext.identity.caller,
-		apiKey: request.requestContext.identity.apiKey,
-		authorizerPrincipalId: request.requestContext.authorizer ? request.requestContext.authorizer.principalId : null,
-		cognitoAuthenticationProvider: request.requestContext.identity.cognitoAuthenticationProvider,
-		cognitoAuthenticationType:  request.requestContext.identity.cognitoAuthenticationType,
-		cognitoIdentityId:  request.requestContext.identity.cognitoIdentityId,
-		cognitoIdentityPoolId: request.requestContext.identity.cognitoIdentityPoolId
-	};
+	result.context = request.requestContext ? convertContext(request.requestContext) : {};
 	return result;
 };

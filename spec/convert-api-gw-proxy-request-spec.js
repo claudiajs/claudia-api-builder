@@ -315,5 +315,9 @@ describe('extendApiGWProxyRequest', function () {
 				expect(underTest(apiGWRequest).context.cognitoIdentityPoolId).toEqual('cognito-pool-id');
 			});
 		});
+		it('is an empty object if request context is not defined', function () {
+			apiGWRequest.requestContext = null;
+			expect(underTest(apiGWRequest).context).toEqual({});
+		});
 	});
 });
