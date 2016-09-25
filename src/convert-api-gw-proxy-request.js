@@ -32,9 +32,7 @@ module.exports = function extendApiGWProxyRequest(request, lambdaContext) {
 			rawBody: request.body || '',
 			normalizedHeaders: lowercaseKeys(request.headers),
 			lambdaContext: lambdaContext,
-			proxyRequest: request,
-			context: {
-			}
+			proxyRequest: request
 		},
 		canonicalContentType = getCanonicalContentType(result.normalizedHeaders);
 
@@ -52,7 +50,22 @@ module.exports = function extendApiGWProxyRequest(request, lambdaContext) {
 	} else {
 		result.body = result.rawBody;
 	}
-	result.context.method = (request.requestContext.httpMethod || 'GET').toUpperCase();
-	result.context.path = request.requestContext.resourcePath;
+	result.context = {
+		method: (request.requestContext.httpMethod || 'GET').toUpperCase(),
+		path: request.requestContext.resourcePath,
+		stage: request.requestContext.stage,
+		sourceIp: request.requestContext.identity.sourceIp,
+		accountId: request.requestContext.identity.accountId,
+		user: request.requestContext.identity.user,
+		userAgent: request.requestContext.identity.userAgent,
+		userArn: request.requestContext.identity.userArn,
+		caller: request.requestContext.identity.caller,
+		apiKey: request.requestContext.identity.apiKey,
+		authorizerPrincipalId: request.requestContext.authorizer ? request.requestContext.authorizer.principalId : null,
+		cognitoAuthenticationProvider: request.requestContext.identity.cognitoAuthenticationProvider,
+		cognitoAuthenticationType:  request.requestContext.identity.cognitoAuthenticationType,
+		cognitoIdentityId:  request.requestContext.identity.cognitoIdentityId,
+		cognitoIdentityPoolId: request.requestContext.identity.cognitoIdentityPoolId
+	};
 	return result;
 };

@@ -12,7 +12,7 @@ describe('extendApiGWProxyRequest', function () {
 				'Authorization' : 'abc-DeF',
 				'X-Forwarded-Port' : '443',
 				'Content-Type' : 'application/x-www-form-urlencoded',
-				'X-Forwarded-For' : '24.135.46.241, 54.239.167.121'
+				'X-Forwarded-For' : '24.15.46.241, 54.239.167.121'
 			},
 			'body' : 'birthyear=1905&press=%20OK%20',
 			'httpMethod' : 'POST',
@@ -34,17 +34,17 @@ describe('extendApiGWProxyRequest', function () {
 				},
 				'httpMethod' : 'POST',
 				'identity' : {
-					'accountId' : null,
+					'accountId' : 'acc-id',
 					'userAgent' : 'curl/7.43.0',
-					'apiKey' : null,
-					'cognitoIdentityId' : null,
-					'user' : null,
-					'cognitoIdentityPoolId' : null,
-					'cognitoAuthenticationProvider' : null,
-					'caller' : null,
-					'userArn' : null,
-					'sourceIp' : '24.135.46.241',
-					'cognitoAuthenticationType' : null
+					'apiKey' : 'api-key',
+					'cognitoIdentityId' : 'cognito-identity-id',
+					'user' : 'request-user',
+					'cognitoIdentityPoolId' : 'cognito-pool-id',
+					'cognitoAuthenticationProvider' : 'cognito-auth-provider',
+					'caller' : 'request-caller',
+					'userArn' : 'user-arn',
+					'sourceIp' : '24.15.46.241',
+					'cognitoAuthenticationType' : 'cognito-auth-type'
 				},
 				'accountId' : '818931230230',
 				'apiId' : 'txdif4prz3',
@@ -104,7 +104,7 @@ describe('extendApiGWProxyRequest', function () {
 				'Authorization' : 'abc-DeF',
 				'X-Forwarded-Port' : '443',
 				'Content-Type' : 'application/x-www-form-urlencoded',
-				'X-Forwarded-For' : '24.135.46.241, 54.239.167.121'
+				'X-Forwarded-For' : '24.15.46.241, 54.239.167.121'
 			});
 		});
 		it('replaces headers with an empty object if not defined', function () {
@@ -118,7 +118,7 @@ describe('extendApiGWProxyRequest', function () {
 				'authorization' : 'abc-DeF',
 				'x-forwarded-port' : '443',
 				'content-type' : 'application/x-www-form-urlencoded',
-				'x-forwarded-for' : '24.135.46.241, 54.239.167.121'
+				'x-forwarded-for' : '24.15.46.241, 54.239.167.121'
 			});
 		});
 		it('uses empty object if headers are not defined', function () {
@@ -244,6 +244,75 @@ describe('extendApiGWProxyRequest', function () {
 		describe('path', function () {
 			it('contains the request path', function () {
 				expect(underTest(apiGWRequest).context.path).toEqual('/hello/{name}');
+			});
+		});
+		describe('stage', function () {
+			it('containst the api gateway stage', function () {
+				expect(underTest(apiGWRequest).context.stage).toEqual('latest');
+			});
+		});
+		describe('sourceIp', function () {
+			it('containst the api request source IP', function () {
+				expect(underTest(apiGWRequest).context.sourceIp).toEqual('24.15.46.241');
+			});
+		});
+		describe('accountId', function () {
+			it('containst the request account ID', function () {
+				expect(underTest(apiGWRequest).context.accountId).toEqual('acc-id');
+			});
+		});
+		describe('user', function () {
+			it('containst the request AWS user', function () {
+				expect(underTest(apiGWRequest).context.user).toEqual('request-user');
+			});
+		});
+		describe('userAgent', function () {
+			it('containst the request user agent', function () {
+				expect(underTest(apiGWRequest).context.user).toEqual('request-user');
+			});
+		});
+		describe('userArn', function () {
+			it('containst the request AWS user ARN', function () {
+				expect(underTest(apiGWRequest).context.userArn).toEqual('user-arn');
+			});
+		});
+		describe('caller', function () {
+			it('containst the request caller identity', function () {
+				expect(underTest(apiGWRequest).context.caller).toEqual('request-caller');
+			});
+		});
+		describe('apiKey', function () {
+			it('containst the API key used for the call', function () {
+				expect(underTest(apiGWRequest).context.apiKey).toEqual('api-key');
+			});
+		});
+		describe('authorizerPrincipalId', function () {
+			it('containst the authorizer principal, if provided', function () {
+				expect(underTest(apiGWRequest).context.authorizerPrincipalId).toEqual('abc');
+			});
+			it('is null if authorizer context is not present', function () {
+				apiGWRequest.requestContext.authorizer = null;
+				expect(underTest(apiGWRequest).context.authorizerPrincipalId).toEqual(null);
+			});
+		});
+		describe('cognitoAuthenticationProvider', function () {
+			it('containst the cognito authentication provider', function () {
+				expect(underTest(apiGWRequest).context.cognitoAuthenticationProvider).toEqual('cognito-auth-provider');
+			});
+		});
+		describe('cognitoAuthenticationType', function () {
+			it('containst the cognito authentication type', function () {
+				expect(underTest(apiGWRequest).context.cognitoAuthenticationType).toEqual('cognito-auth-type');
+			});
+		});
+		describe('cognitoIdentityId', function () {
+			it('containst the cognito identity ID', function () {
+				expect(underTest(apiGWRequest).context.cognitoIdentityId).toEqual('cognito-identity-id');
+			});
+		});
+		describe('cognitoIdentityPoolId', function () {
+			it('containst the cognito identity pool ID', function () {
+				expect(underTest(apiGWRequest).context.cognitoIdentityPoolId).toEqual('cognito-pool-id');
 			});
 		});
 	});
