@@ -219,24 +219,26 @@ module.exports = function ApiBuilder(options) {
 					return interceptCallback(request, context);
 				});
 			}
+		},
+		setUpHandler = function (method) {
+			self[method.toLowerCase()] = function (route, handler, options) {
+				var pathPart = route.replace(/^\//, ''),
+					canonicalRoute = route;
+				if (!/^\//.test(canonicalRoute)) {
+					canonicalRoute = '/' + route;
+				}
+				if (!methodConfigurations[pathPart]) {
+					methodConfigurations[pathPart] = {} ;
+				}
+				methodConfigurations[pathPart][method] = (options || {});
+				if (!routes[canonicalRoute]) {
+					routes[canonicalRoute] = {};
+				}
+				routes[canonicalRoute][method] = handler;
+			};
 		};
-	['ANY'].concat(supportedMethods).forEach(function (method) {
-		self[method.toLowerCase()] = function (route, handler, options) {
-			var pathPart = route.replace(/^\//, ''),
-				canonicalRoute = route;
-			if (!/^\//.test(canonicalRoute)) {
-				canonicalRoute = '/' + route;
-			}
-			if (!methodConfigurations[pathPart]) {
-				methodConfigurations[pathPart] = {} ;
-			}
-			methodConfigurations[pathPart][method] = (options || {});
-			if (!routes[canonicalRoute]) {
-				routes[canonicalRoute] = {};
-			}
-			routes[canonicalRoute][method] = handler;
-		};
-	});
+
+	['ANY'].concat(supportedMethods).forEach(setUpHandler);
 	self.apiConfig = function () {
 		var result = {version: 3, routes: methodConfigurations};
 		if (customCorsHandler !== undefined) {
