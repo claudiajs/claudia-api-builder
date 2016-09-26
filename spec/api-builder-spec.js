@@ -603,79 +603,95 @@ describe('ApiBuilder', function () {
 					});
 				});
 				describe('result formatting', function () {
-					describe('when content type is application/json', function () {
-						beforeEach(function () {
-							underTest.get('/echo', requestHandler, {
-								success: { headers: { 'Content-Type': 'application/json' } }
+					['application/json', 'application/json; charset=UTF-8'].forEach(function (respContentType) {
+						describe('when content type is ' + respContentType, function () {
+							beforeEach(function () {
+								underTest.get('/echo', requestHandler, {
+									error: { headers: { 'Content-Type': respContentType } }
+								});
 							});
-						});
-						it('stringifies objects', function (done) {
-							requestHandler.and.returnValue({hi: 'there'});
-							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('{"hi":"there"}');
-							}).then(done, done.fail);
-						});
-						it('JSON-stringifies non objects for application/json', function (done) {
-							requestHandler.and.returnValue('OK');
-							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('"OK"');
-							}).then(done, done.fail);
-						});
-						['', undefined].forEach(function (literal) {
-							it('uses blank object for [' + literal + ']', function (done) {
-								requestHandler.and.returnValue(literal);
+							it('extracts message from Error objects', function (done) {
 								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-									expect(responseBody()).toEqual('{}');
+									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
 								}).then(done, done.fail);
+								requestHandler.and.throwError('boom!');
 							});
-						});
-						[null, false].forEach(function (literal) {
-							it('uses literal version for ' + literal, function (done) {
-								requestHandler.and.returnValue(literal);
+							it('includes string error messages', function (done) {
 								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-									expect(responseBody()).toEqual('' + literal);
+									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
 								}).then(done, done.fail);
+								requestHandler.and.callFake(function () {
+									throw 'boom!';
+								});
+							});
+							it('extracts message from rejected async Errors', function (done) {
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
+								}).then(done, done.fail);
+								requestHandler.and.callFake(function () {
+									return new Promise(function () {
+										throw new Error('boom!');
+									});
+								});
+							});
+							it('extracts message from rejected promises', function (done) {
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
+								}).then(done, done.fail);
+								requestHandler.and.returnValue(Promise.reject('boom!'));
+							});
+							['', undefined, null, false].forEach(function (literal) {
+								it('uses blank message for [' + literal + ']', function (done) {
+									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+										expect(responseBody()).toEqual('{"errorMessage":""}');
+									}).then(done, done.fail);
+									requestHandler.and.returnValue(Promise.reject(literal));
+								});
 							});
 						});
 					});
 					describe('when content type is not JSON', function () {
 						beforeEach(function () {
 							underTest.get('/echo', requestHandler, {
-								success: { headers: { 'Content-Type': 'application/xml' } }
+								error: { headers: { 'Content-Type': 'application/xml' } }
 							});
 						});
-						it('stringifies objects', function (done) {
-							requestHandler.and.returnValue({hi: 'there'});
+						it('extracts message from Error objects', function (done) {
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('{"hi":"there"}');
+								expect(responseBody()).toEqual('boom!');
 							}).then(done, done.fail);
+							requestHandler.and.throwError('boom!');
 						});
-						it('returns literal results for strings', function (done) {
-							requestHandler.and.returnValue('OK');
+						it('includes string error messages', function (done) {
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('OK');
+								expect(responseBody()).toEqual('boom!');
 							}).then(done, done.fail);
+							requestHandler.and.callFake(function () {
+								throw 'boom!';
+							});
 						});
-						it('returns string results for numbers', function (done) {
-							requestHandler.and.returnValue(123);
+						it('extracts message from rejected async Errors', function (done) {
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('123');
+								expect(responseBody()).toEqual('boom!');
 							}).then(done, done.fail);
-						});
-						it('returns string results for true', function (done) {
-							requestHandler.and.returnValue(true);
-							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('true');
-							}).then(done, done.fail);
-						});
-						describe('uses blank string for', function () {
-							[null, false, '', undefined].forEach(function (resp) {
-								it('[' + resp + ']', function (done) {
-									requestHandler.and.returnValue(resp);
-									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-										expect(responseBody()).toEqual('');
-									}).then(done, done.fail);
+							requestHandler.and.callFake(function () {
+								return new Promise(function () {
+									throw new Error('boom!');
 								});
+							});
+						});
+						it('extracts message from rejected promises', function (done) {
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('boom!');
+							}).then(done, done.fail);
+							requestHandler.and.returnValue(Promise.reject('boom!'));
+						});
+						['', undefined, null, false].forEach(function (literal) {
+							it('uses blank message for [' + literal + ']', function (done) {
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('');
+								}).then(done, done.fail);
+								requestHandler.and.returnValue(Promise.reject(literal));
 							});
 						});
 					});

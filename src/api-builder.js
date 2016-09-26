@@ -64,10 +64,12 @@ module.exports = function ApiBuilder(options) {
 				staticHeader = configuration && configuration.headers && lowercaseKeys(configuration.headers).location;
 			return dynamicHeader || dynamicBody || staticHeader;
 		},
-		getBody = function (contentType, handlerResult) {
-			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult,
-				canonicalContentType = contentType.split(';')[0];
-			if (canonicalContentType === 'application/json') {
+		getCanonicalContentType = function (contentType) {
+			return (contentType && contentType.split(';')[0]) || 'application/json';
+		},
+		getSuccessBody = function (contentType, handlerResult) {
+			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
+			if (getCanonicalContentType(contentType) === 'application/json') {
 				if (contents === '' || contents ===	undefined) {
 					return '{}';
 				} else {
@@ -83,6 +85,23 @@ module.exports = function ApiBuilder(options) {
 				}
 			}
 		},
+		isError = function (object) {
+			return object && (object.message !== undefined) && object.stack;
+		},
+		getErrorBody = function (contentType, handlerResult) {
+			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
+			if (isError(contents)) {
+				contents = contents.message;
+			}
+			if (getCanonicalContentType(contentType) === 'application/json') {
+				return JSON.stringify({errorMessage: contents || '' });
+			} else {
+				return contents || '';
+			}
+		},
+		getBody = function (contentType, handlerResult, resultType) {
+			return resultType === 'success' ? getSuccessBody(contentType, handlerResult) : getErrorBody(contentType, handlerResult);
+		},
 		packResult = function (handlerResult, routingInfo, corsHeaders, resultType) {
 			var path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
@@ -93,7 +112,7 @@ module.exports = function ApiBuilder(options) {
 				result = {
 					statusCode: statusCode,
 					headers: { 'Content-Type': contentType },
-					body: getBody(contentType, handlerResult)
+					body: getBody(contentType, handlerResult, resultType)
 				};
 			mergeObjects(corsHeaders, result.headers);
 			if (customHeaders) {
