@@ -1,5 +1,14 @@
 # Release history
 
+## 2.0.0, XX
+
+- support for API Gateway [Lambda Proxy Integrations](docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html)
+- support for routing via .ANY method
+- support for selecting request type (either CLAUDIA_API_BUILDER or AWS_PROXY)
+- support for dynamic response codes
+- completed CORS support (all HTTP method request handlers can now also limit CORS allowed origins, instead of just the OPTIONS one)
+- support for asynchronous CORS origin filters
+
 ## 1.6.0, 26 August 2016
 
 - support for custom authorizers
