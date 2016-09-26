@@ -27,6 +27,9 @@ module.exports = function ApiBuilder(components) {
 			});
 			return to;
 		},
+		isRedirect = function (code) {
+			return /3[0-9][0-9]/.test(code);
+		},
 		getContentType = function (configuration, result) {
 			var staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
 				dynamicHeader = (result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers)['content-type']),
@@ -34,23 +37,30 @@ module.exports = function ApiBuilder(components) {
 
 			return dynamicHeader || staticHeader || staticConfig || 'application/json';
 		},
+		getStatusCode = function (configuration, result) {
+			var staticCode = (configuration && configuration.code) || (typeof configuration === 'number' && configuration),
+				dynamicCode = (result && isApiResponse(result) && result.code);
+			return dynamicCode || staticCode || 200;
+		},
+		getRedirectLocation = function (configuration, result) {
+			var dynamicHeader = result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers).location,
+				dynamicBody = isApiResponse(result) ? result.response : result,
+				staticHeader = configuration && configuration.headers && lowercaseKeys(configuration.headers).location;
+			return dynamicHeader || dynamicBody || staticHeader;
+		},
 		packResult = function (handlerResult, routingInfo, corsHeaders) {
 			var path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
 				successConfiguration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success,
 				customHeaders = successConfiguration && successConfiguration.headers,
 				contentType = getContentType(successConfiguration, handlerResult),
+				statusCode = getStatusCode(successConfiguration, handlerResult),
 				result = {
-					statusCode: 200,
+					statusCode: statusCode,
 					headers: { 'Content-Type': contentType },
 					body: handlerResult
 				};
 			mergeObjects(corsHeaders, result.headers);
-			if (typeof successConfiguration === 'number') {
-				result.statusCode = successConfiguration;
-			} else if (successConfiguration && successConfiguration.code) {
-				result.statusCode = successConfiguration && successConfiguration.code;
-			}
 			if (customHeaders) {
 				if (Array.isArray(customHeaders)) {
 					v2DeprecationWarning('enumerated headers');
@@ -60,10 +70,10 @@ module.exports = function ApiBuilder(components) {
 			}
 			if (isApiResponse(handlerResult)) {
 				mergeObjects(handlerResult.headers, result.headers);
-				if (handlerResult.code) {
-					result.statusCode = handlerResult.code;
-				}
 				result.body = handlerResult.response;
+			}
+			if (isRedirect(statusCode)) {
+				result.headers.Location = getRedirectLocation(successConfiguration, handlerResult);
 			}
 			return result;
 		},

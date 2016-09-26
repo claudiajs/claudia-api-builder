@@ -534,11 +534,78 @@ describe('ApiBuilder', function () {
 						});
 					});
 					describe('when result code is a redirect', function () {
-						it('packs the result into the location header', function () {
-
+						it('packs the result into the location header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: 302
+							});
+							requestHandler.and.returnValue('https://www.google.com');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.google.com');
+							}).then(done, done.fail);
 						});
-						it('uses the dynamic headers if provided', function () {
-
+						it('includes CORS headers', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: 302
+							});
+							requestHandler.and.returnValue('https://www.google.com');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Access-Control-Allow-Origin')).toEqual('*');
+							}).then(done, done.fail);
+						});
+						it('uses the dynamic headers if provided', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: 302
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('https://www.google.com', {'Location': 'https://www.amazon.com'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.amazon.com');
+							}).then(done, done.fail);
+						});
+						it('uses body of a dynamic response if no location header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: 302
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('https://www.google.com', {'X-Val1': 'v2'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.google.com');
+								expect(responseHeaders('X-Val1')).toEqual('v2');
+							}).then(done, done.fail);
+						});
+						it('uses mixed case dynamic header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: 302
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('https://www.google.com', {'LocaTion': 'https://www.amazon.com'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.amazon.com');
+							}).then(done, done.fail);
+						});
+						it('uses the static header if no response body', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { code: 302, headers: {'Location': 'https://www.google.com'} }
+							});
+							requestHandler.and.returnValue('');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.google.com');
+							}).then(done, done.fail);
+						});
+						it('uses the response body over the static header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { code: 302, headers: {'Location': 'https://www.google.com'} }
+							});
+							requestHandler.and.returnValue('https://www.xkcd.com');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.xkcd.com');
+							}).then(done, done.fail);
+						});
+						it('uses the dynamic header value over the static header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { code: 302, headers: {'Location': 'https://www.google.com'} }
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('https://www.google.com', {'Location': 'https://www.amazon.com'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Location')).toEqual('https://www.amazon.com');
+							}).then(done, done.fail);
 						});
 					});
 
