@@ -65,8 +65,9 @@ module.exports = function ApiBuilder(options) {
 			return dynamicHeader || dynamicBody || staticHeader;
 		},
 		getBody = function (contentType, handlerResult) {
-			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
-			if (contentType === 'application/json') {
+			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult,
+				canonicalContentType = contentType.split(';')[0];
+			if (canonicalContentType === 'application/json') {
 				if (contents === '' || contents ===	undefined) {
 					return '{}';
 				} else {

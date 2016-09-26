@@ -602,6 +602,84 @@ describe('ApiBuilder', function () {
 						});
 					});
 				});
+				describe('result formatting', function () {
+					describe('when content type is application/json', function () {
+						beforeEach(function () {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'Content-Type': 'application/json' } }
+							});
+						});
+						it('stringifies objects', function (done) {
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('{"hi":"there"}');
+							}).then(done, done.fail);
+						});
+						it('JSON-stringifies non objects for application/json', function (done) {
+							requestHandler.and.returnValue('OK');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('"OK"');
+							}).then(done, done.fail);
+						});
+						['', undefined].forEach(function (literal) {
+							it('uses blank object for [' + literal + ']', function (done) {
+								requestHandler.and.returnValue(literal);
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('{}');
+								}).then(done, done.fail);
+							});
+						});
+						[null, false].forEach(function (literal) {
+							it('uses literal version for ' + literal, function (done) {
+								requestHandler.and.returnValue(literal);
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('' + literal);
+								}).then(done, done.fail);
+							});
+						});
+					});
+					describe('when content type is not JSON', function () {
+						beforeEach(function () {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'Content-Type': 'application/xml' } }
+							});
+						});
+						it('stringifies objects', function (done) {
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('{"hi":"there"}');
+							}).then(done, done.fail);
+						});
+						it('returns literal results for strings', function (done) {
+							requestHandler.and.returnValue('OK');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('OK');
+							}).then(done, done.fail);
+						});
+						it('returns string results for numbers', function (done) {
+							requestHandler.and.returnValue(123);
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('123');
+							}).then(done, done.fail);
+						});
+						it('returns string results for true', function (done) {
+							requestHandler.and.returnValue(true);
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('true');
+							}).then(done, done.fail);
+						});
+						describe('uses blank string for', function () {
+							[null, false, '', undefined].forEach(function (resp) {
+								it('[' + resp + ']', function (done) {
+									requestHandler.and.returnValue(resp);
+									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+										expect(responseBody()).toEqual('');
+									}).then(done, done.fail);
+								});
+							});
+						});
+					});
+				});
 				/**/
 
 			});
@@ -923,38 +1001,40 @@ describe('ApiBuilder', function () {
 
 				});
 				describe('result formatting', function () {
-					describe('when content type is application/json', function () {
-						beforeEach(function () {
-							underTest.get('/echo', requestHandler, {
-								success: { headers: { 'Content-Type': 'application/json' } }
+					['application/json', 'application/json; charset=UTF-8'].forEach(function (respContentType) {
+						describe('when content type is ' + respContentType, function () {
+							beforeEach(function () {
+								underTest.get('/echo', requestHandler, {
+									success: { headers: { 'Content-Type': respContentType } }
+								});
 							});
-						});
-						it('stringifies objects', function (done) {
-							requestHandler.and.returnValue({hi: 'there'});
-							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('{"hi":"there"}');
-							}).then(done, done.fail);
-						});
-						it('JSON-stringifies non objects for application/json', function (done) {
-							requestHandler.and.returnValue('OK');
-							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-								expect(responseBody()).toEqual('"OK"');
-							}).then(done, done.fail);
-						});
-						['', undefined].forEach(function (literal) {
-							it('uses blank object for [' + literal + ']', function (done) {
-								requestHandler.and.returnValue(literal);
+							it('stringifies objects', function (done) {
+								requestHandler.and.returnValue({hi: 'there'});
 								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-									expect(responseBody()).toEqual('{}');
+									expect(responseBody()).toEqual('{"hi":"there"}');
 								}).then(done, done.fail);
 							});
-						});
-						[null, false].forEach(function (literal) {
-							it('uses literal version for ' + literal, function (done) {
-								requestHandler.and.returnValue(literal);
+							it('JSON-stringifies non objects', function (done) {
+								requestHandler.and.returnValue('OK');
 								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-									expect(responseBody()).toEqual('' + literal);
+									expect(responseBody()).toEqual('"OK"');
 								}).then(done, done.fail);
+							});
+							['', undefined].forEach(function (literal) {
+								it('uses blank object for [' + literal + ']', function (done) {
+									requestHandler.and.returnValue(literal);
+									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+										expect(responseBody()).toEqual('{}');
+									}).then(done, done.fail);
+								});
+							});
+							[null, false].forEach(function (literal) {
+								it('uses literal version for ' + literal, function (done) {
+									requestHandler.and.returnValue(literal);
+									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+										expect(responseBody()).toEqual('' + literal);
+									}).then(done, done.fail);
+								});
 							});
 						});
 					});
