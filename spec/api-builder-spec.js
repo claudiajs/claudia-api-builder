@@ -1,5 +1,6 @@
 /*global describe, it, expect, jasmine, require, beforeEach */
 var ApiBuilder = require('../src/api-builder'),
+	convertApiGWProxyRequest = require('../src/convert-api-gw-proxy-request'),
 	Promise = require('bluebird');
 describe('ApiBuilder', function () {
 	'use strict';
@@ -99,7 +100,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('proxyRouter', function () {
-		var proxyRequest;
+		var proxyRequest, apiRequest;
 		beforeEach(function () {
 			proxyRequest = {
 				queryStringParameters : {
@@ -110,15 +111,12 @@ describe('ApiBuilder', function () {
 					httpMethod: 'GET'
 				}
 			};
+			apiRequest = convertApiGWProxyRequest(proxyRequest, lambdaContext);
 			underTest.get('/', requestHandler);
 		});
 		it('converts API gateway proxy requests then routes call', function (done) {
 			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-				expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
-					lambdaContext: lambdaContext,
-					proxyRequest: proxyRequest,
-					queryString: { a: 'b' }
-				}), lambdaContext);
+				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			}).then(done, done.fail);
 		});
 		it('does not convert the request before routing if requestFormat = AWS_PROXY', function (done) {
@@ -139,72 +137,70 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('call execution', function () {
-		var apiRequest;
+		var apiRequest, proxyRequest;
 		beforeEach(function () {
 			underTest.get('/echo', requestHandler);
-			apiRequest = {
-				context: {
-					path: '/echo',
-					method: 'GET'
-				},
-				queryString: {
-					a: 'b'
+			proxyRequest = {
+				requestContext: {
+					resourcePath: '/echo',
+					httpMethod: 'GET'
 				}
 			};
+			apiRequest = convertApiGWProxyRequest(proxyRequest, lambdaContext);
 		});
 
 		describe('routing calls', function () {
 			it('can route to /', function (done) {
 				underTest.get('/', postRequestHandler);
-				apiRequest.context.path = '/';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.resourcePath = apiRequest.context.path = '/';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 				}).then(done, done.fail);
 			});
 			it('complains about an unsuported route', function (done) {
-				apiRequest.context.path = '/no';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.resourcePath = apiRequest.context.path = '/no';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no');
 				}).then(done, done.fail);
 			});
 			it('complains about an unsupported call', function (done) {
-				underTest.router({}, lambdaContext).then(function () {
+				underTest.proxyRouter({}, lambdaContext).then(function () {
 					expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
 				}).then(done, done.fail);
 			});
 			it('can route calls to a single GET method', function (done) {
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 				}).then(done, done.fail);
 			});
 			it('can route calls in mixed case', function (done) {
 				underTest.get('/CamelCase', postRequestHandler);
-				apiRequest.context.path = '/CamelCase';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.resourcePath = apiRequest.context.path = '/CamelCase';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 				}).then(done, done.fail);
 			});
 			it('can route calls configured without a slash', function (done) {
 				underTest.post('echo', postRequestHandler);
-				apiRequest.context.method = 'POST';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.httpMethod = apiRequest.context.method = 'POST';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 					expect(requestHandler).not.toHaveBeenCalled();
 				}).then(done, done.fail);
 			});
 			it('can route to multiple methods', function (done) {
 				underTest.post('/echo', postRequestHandler);
-				apiRequest.context.method = 'POST';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.httpMethod = apiRequest.context.method = 'POST';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 					expect(requestHandler).not.toHaveBeenCalled();
 				}).then(done, done.fail);
 			});
 			it('can route to multiple routes', function (done) {
 				underTest.post('/echo2', postRequestHandler);
-				apiRequest.context.path = '/echo2';
-				apiRequest.context.method = 'POST';
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				proxyRequest.requestContext.resourcePath = apiRequest.context.path = '/echo2';
+				proxyRequest.requestContext.httpMethod = apiRequest.context.method = 'POST';
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 					expect(requestHandler).not.toHaveBeenCalled();
 				}).then(done, done.fail);
@@ -214,13 +210,13 @@ describe('ApiBuilder', function () {
 			describe('synchronous', function () {
 				it('can handle synchronous exceptions in the routed method', function (done) {
 					requestHandler.and.throwError('Error');
-					underTest.router(apiRequest, lambdaContext).then(function () {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 						expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
 					}).then(done, done.fail);
 				});
 				it('can handle successful synchronous results from the request handler', function (done) {
 					requestHandler.and.returnValue({hi: 'there'});
-					underTest.router(apiRequest, lambdaContext).then(function () {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 						expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 							statusCode: 200
 						}));
@@ -230,7 +226,7 @@ describe('ApiBuilder', function () {
 			describe('asynchronous', function () {
 				it('waits for promises to resolve or reject before responding', function (done) {
 					requestHandler.and.returnValue(requestPromise);
-					underTest.router(apiRequest, lambdaContext).then(done.fail, done.fail);
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(done.fail, done.fail);
 					Promise.resolve().then(function () {
 						expect(requestHandler).toHaveBeenCalled();
 						expect(lambdaContext.done).not.toHaveBeenCalled();
@@ -240,7 +236,7 @@ describe('ApiBuilder', function () {
 
 				it('synchronously handles plain objects that have a then key, but are not promises', function (done) {
 					requestHandler.and.returnValue({then: 1});
-					underTest.router(apiRequest, lambdaContext).then(function () {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
 							statusCode: 200
 						}));
@@ -248,14 +244,14 @@ describe('ApiBuilder', function () {
 				});
 				it('handles request promise rejecting', function (done) {
 					requestHandler.and.returnValue(requestPromise);
-					underTest.router(apiRequest, lambdaContext).then(function () {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 						expect(lambdaContext.done).toHaveBeenCalledWith('Abort');
 					}).then(done, done.fail);
 					requestReject('Abort');
 				});
 				it('handles request promise resolving', function (done) {
 					requestHandler.and.returnValue(requestPromise);
-					underTest.router(apiRequest, lambdaContext).then(function () {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
 							statusCode: 200
 						}));
@@ -274,7 +270,7 @@ describe('ApiBuilder', function () {
 				describe('status code', function () {
 					it('uses 200 by default', function (done) {
 						requestHandler.and.returnValue({hi: 'there'});
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 200
 							}));
@@ -285,7 +281,7 @@ describe('ApiBuilder', function () {
 						underTest.get('/echo', requestHandler, {
 							success: 204
 						});
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 204
 							}));
@@ -296,7 +292,7 @@ describe('ApiBuilder', function () {
 						underTest.get('/echo', requestHandler, {
 							success: { code: 204 }
 						});
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 204
 							}));
@@ -307,7 +303,7 @@ describe('ApiBuilder', function () {
 						underTest.get('/echo', requestHandler, {
 							success: { contentType: 'text/plain' }
 						});
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 200
 							}));
@@ -315,7 +311,7 @@ describe('ApiBuilder', function () {
 					});
 					it('uses dynamic response code if provided', function (done) {
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 203
 							}));
@@ -326,7 +322,7 @@ describe('ApiBuilder', function () {
 							success: 204
 						});
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 203
 							}));
@@ -337,7 +333,7 @@ describe('ApiBuilder', function () {
 							success: 204
 						});
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 204
 							}));
@@ -345,7 +341,7 @@ describe('ApiBuilder', function () {
 					});
 					it('uses 200 with ApiResponse if code is not set and there is no static override', function (done) {
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
-						underTest.router(apiRequest, lambdaContext).then(function () {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
 								statusCode: 200
 							}));
@@ -458,7 +454,7 @@ describe('ApiBuilder', function () {
 			});
 			it('rejects if the intercept rejects', function (done) {
 				interceptSpy.and.returnValue(Promise.reject('BOOM'));
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).not.toHaveBeenCalled();
 					expect(lambdaContext.done).toHaveBeenCalledWith('BOOM');
@@ -466,7 +462,7 @@ describe('ApiBuilder', function () {
 			});
 			it('rejects if the intercept throws an exception', function (done) {
 				interceptSpy.and.throwError('BOOM');
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).not.toHaveBeenCalled();
 					expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
@@ -482,7 +478,7 @@ describe('ApiBuilder', function () {
 						c: 'd'
 					}
 				});
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
 						context: {
@@ -505,7 +501,7 @@ describe('ApiBuilder', function () {
 						c: 'd'
 					}
 				}));
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
 						context: {
@@ -520,7 +516,7 @@ describe('ApiBuilder', function () {
 			});
 			it('aborts if the intercept returns a falsy value', function (done) {
 				interceptSpy.and.returnValue(false);
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).not.toHaveBeenCalled();
 					expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
@@ -528,7 +524,7 @@ describe('ApiBuilder', function () {
 			});
 			it('aborts if the intercept resolves with a falsy value', function (done) {
 				interceptSpy.and.returnValue(Promise.resolve(false));
-				underTest.router(apiRequest, lambdaContext).then(function () {
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).not.toHaveBeenCalled();
 					expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
