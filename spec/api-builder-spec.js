@@ -350,8 +350,16 @@ describe('ApiBuilder', function () {
 				});
 				describe('header values', function () {
 					var contentType = function () {
-						return lambdaContext.done.calls.argsFor(0)[1].headers['Content-Type'];
-					};
+							return responseHeaders('Content-Type');
+						},
+						responseHeaders = function (headerName) {
+							var headers = lambdaContext.done.calls.argsFor(0)[1].headers;
+							if (headerName) {
+								return headers[headerName];
+							} else {
+								return headers;
+							}
+						};
 					describe('Content-Type', function () {
 						it('uses application/json as the content type by default', function (done) {
 							requestHandler.and.returnValue({hi: 'there'});
@@ -437,36 +445,92 @@ describe('ApiBuilder', function () {
 						});
 					});
 					describe('CORS headers', function () {
-						it('automatically includes CORS headers with the response', function () {
-
+						beforeEach(function () {
+							requestHandler.and.returnValue('abc');
 						});
-						it('uses custom origin if provided', function () {
-
+						it('automatically includes CORS headers with the response', function (done) {
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders()).toEqual(jasmine.objectContaining({
+									'Access-Control-Allow-Origin': '*',
+									'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+									'Access-Control-Allow-Methods': 'GET,OPTIONS'
+								}));
+							}).then(done, done.fail);
 						});
-						it('uses custom Allow-Headers if provided', function () {
-
+						it('uses custom origin if provided', function (done) {
+							underTest.corsOrigin('blah.com');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders()).toEqual(jasmine.objectContaining({
+									'Access-Control-Allow-Origin': 'blah.com',
+									'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+									'Access-Control-Allow-Methods': 'GET,OPTIONS'
+								}));
+							}).then(done, done.fail);
+						});
+						it('uses custom Allow-Headers if provided', function (done) {
+							underTest.corsHeaders('X-Api-Key1');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Access-Control-Allow-Headers')).toEqual('X-Api-Key1');
+							}).then(done, done.fail);
+						});
+						it('clears headers if cors is not allowed', function (done) {
+							underTest.corsOrigin(false);
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders()).toEqual(jasmine.objectContaining({
+									'Access-Control-Allow-Origin': '',
+									'Access-Control-Allow-Headers': '',
+									'Access-Control-Allow-Methods': ''
+								}));
+							}).then(done, done.fail);
 						});
 					});
 					describe('static headers', function () {
-						it('can supply additional static headers in the handler config', function () {
-
+						it('can supply additional static headers in the handler config', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers: { 'Api-Key': 'text123' } }
+							});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Api-Key')).toEqual('text123');
+							}).then(done, done.fail);
 						});
-						it('ignores enumerated static headers -- backwards compatibility', function () {
-
+						it('ignores enumerated static headers -- backwards compatibility', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers: ['Api-Key'] }
+							});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Api-Key')).toBeUndefined();
+							}).then(done, done.fail);
 						});
-						it('overrides CORS headers with static headers', function () {
-
+						it('overrides CORS headers with static headers', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers: {'Access-Control-Allow-Origin': 'x.com' } }
+							});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Access-Control-Allow-Origin')).toEqual('x.com');
+							}).then(done, done.fail);
 						});
 					});
 					describe('dynamic headers', function () {
-						it('can supply additional dynamic headers in the response', function () {
-
+						it('can supply additional dynamic headers in the response', function (done) {
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Api-Type')).toEqual('text/markdown');
+							}).then(done, done.fail);
 						});
-						it('overrides static headers with dynamic headers', function () {
-
+						it('overrides static headers with dynamic headers', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers : { 'Api-Type': '123'} }
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Api-Type')).toEqual('text/markdown');
+							}).then(done, done.fail);
 						});
-						it('overrides CORS headers with dynamic headers', function () {
-
+						it('overrides CORS headers with dynamic headers', function (done) {
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Access-Control-Allow-Origin': 'x.com'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseHeaders('Access-Control-Allow-Origin')).toEqual('x.com');
+							}).then(done, done.fail);
 						});
 					});
 					describe('when result code is a redirect', function () {
@@ -647,7 +711,7 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS'
 					},
 					body: ''
 				});
@@ -677,7 +741,7 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS'
 					},
 					body: ''
 				});
@@ -694,7 +758,7 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS'
 					},
 					body: ''
 				});
@@ -709,7 +773,7 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin-string',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS'
 					},
 					body: ''
 				});
@@ -735,7 +799,22 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'X-Api-Request',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
+		});
+		it('uses all available methods on a resource in Allow-Methods', function (done) {
+			underTest.post('/existing', requestHandler);
+			underTest.put('/existing', requestHandler);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
 					},
 					body: ''
 				});

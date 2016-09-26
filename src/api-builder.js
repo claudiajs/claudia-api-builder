@@ -67,7 +67,7 @@ module.exports = function ApiBuilder(components) {
 			}
 			return result;
 		},
-		getCorsHeaders = function (request) {
+		getCorsHeaders = function (request, methods) {
 			return Promise.resolve().then(function () {
 				if (customCorsHandler === false) {
 					return '';
@@ -80,7 +80,7 @@ module.exports = function ApiBuilder(components) {
 				return {
 					'Access-Control-Allow-Origin': corsOrigin,
 					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
-					'Access-Control-Allow-Methods': corsOrigin && supportedMethods.join(',') + ',OPTIONS'
+					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS'
 				};
 			});
 		},
@@ -90,7 +90,7 @@ module.exports = function ApiBuilder(components) {
 				throw 'routingInfo not set';
 			}
 			handler = routes[routingInfo.path] && routes[routingInfo.path][routingInfo.method];
-			return getCorsHeaders(event).then(function (corsHeaders) {
+			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {})).then(function (corsHeaders) {
 				if (routingInfo.method === 'OPTIONS') {
 					return {
 						statusCode: 200,
