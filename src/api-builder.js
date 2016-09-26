@@ -27,6 +27,11 @@ module.exports = function ApiBuilder(components) {
 					headers: corsHeaders,
 					body: handlerResult
 				};
+			if (typeof successConfiguration === 'number') {
+				result.statusCode = successConfiguration;
+			} else if (successConfiguration && successConfiguration.code) {
+				result.statusCode = successConfiguration && successConfiguration.code;
+			}
 			if (customHeaders) {
 				console.log('enumerated headers are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
 				if (!Array.isArray(customHeaders)) {
@@ -39,6 +44,9 @@ module.exports = function ApiBuilder(components) {
 				Object.keys(handlerResult.headers).forEach(function (headerName) {
 					result.header[headerName] = customHeaders[headerName];
 				});
+				if (handlerResult.code) {
+					result.statusCode = handlerResult.code;
+				}
 				result.body = handlerResult.response;
 			}
 			return result;
@@ -164,9 +172,10 @@ module.exports = function ApiBuilder(components) {
 			throw 'corsHeaders only accepts strings';
 		}
 	};
-	self.ApiResponse = function (responseBody, responseHeaders) {
+	self.ApiResponse = function (responseBody, responseHeaders, code) {
 		this.response = responseBody;
 		this.headers = responseHeaders;
+		this.code = code;
 	};
 	self.unsupportedEvent = function (callback) {
 		console.log('.unsupportedEvent is deprecated and will be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');

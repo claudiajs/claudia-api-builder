@@ -272,20 +272,84 @@ describe('ApiBuilder', function () {
 			});
 			describe('success handling', function () {
 				describe('status code', function () {
-					it('uses 200 by default', function () {
-
+					it('uses 200 by default', function (done) {
+						requestHandler.and.returnValue({hi: 'there'});
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 200
+							}));
+						}).then(done, done.fail);
 					});
-					it('can configure success code with handler success as a number', function () {
-
+					it('can configure success code with handler success as a number', function (done) {
+						requestHandler.and.returnValue({hi: 'there'});
+						underTest.get('/echo', requestHandler, {
+							success: 204
+						});
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 204
+							}));
+						}).then(done, done.fail);
 					});
-					it('can configure success code with handler success as an object key', function () {
-
+					it('can configure success code with handler success as an object key', function (done) {
+						requestHandler.and.returnValue({hi: 'there'});
+						underTest.get('/echo', requestHandler, {
+							success: { code: 204 }
+						});
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 204
+							}));
+						}).then(done, done.fail);
 					});
-					it('uses dynamic response code if provided', function () {
-
+					it('uses a default if success is defined as an object, but without code', function (done) {
+						requestHandler.and.returnValue({hi: 'there'});
+						underTest.get('/echo', requestHandler, {
+							success: { contentType: 'text/plain' }
+						});
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 200
+							}));
+						}).then(done, done.fail);
 					});
-					it('uses dynamic response code over static definitions', function () {
-
+					it('uses dynamic response code if provided', function (done) {
+						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 203
+							}));
+						}).then(done, done.fail);
+					});
+					it('uses dynamic response code over static definitions', function (done) {
+						underTest.get('/echo', requestHandler, {
+							success: 204
+						});
+						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 203
+							}));
+						}).then(done, done.fail);
+					});
+					it('uses a static definition with ApiResponse if code is not set', function (done) {
+						underTest.get('/echo', requestHandler, {
+							success: 204
+						});
+						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 204
+							}));
+						}).then(done, done.fail);
+					});
+					it('uses 200 with ApiResponse if code is not set and there is no static override', function (done) {
+						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
+						underTest.router(apiRequest, lambdaContext).then(function () {
+							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+								statusCode: 200
+							}));
+						}).then(done, done.fail);
 					});
 				});
 				describe('header values', function () {
@@ -384,24 +448,6 @@ describe('ApiBuilder', function () {
 			});
 		});
 
-		describe('unsupported event format', function () {
-			it('causes lambda context to complete with error if no custom handler', function (done) {
-				underTest.router({}, lambdaContext).then(function () {
-					expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
-				}).then(done, done.fail);
-			});
-			it('calls custom handler if provided', function (done) {
-				var fakeCallback = jasmine.createSpy();
-				underTest.unsupportedEvent(function (event, context, callback) {
-					expect(event).toEqual({a: 1});
-					expect(context).toEqual(lambdaContext);
-					expect(callback).toEqual(fakeCallback);
-					expect(lambdaContext.done).not.toHaveBeenCalled();
-					done();
-				});
-				underTest.proxyRouter({a: 1}, lambdaContext, fakeCallback);
-			});
-		});
 		describe('intercepting calls', function () {
 			var interceptSpy;
 			beforeEach(function () {
@@ -490,6 +536,25 @@ describe('ApiBuilder', function () {
 			});
 		});
 	});
+	describe('unsupported event format', function () {
+		it('causes lambda context to complete with error if no custom handler', function (done) {
+			underTest.router({}, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
+			}).then(done, done.fail);
+		});
+		it('calls custom handler if provided', function (done) {
+			var fakeCallback = jasmine.createSpy();
+			underTest.unsupportedEvent(function (event, context, callback) {
+				expect(event).toEqual({a: 1});
+				expect(context).toEqual(lambdaContext);
+				expect(callback).toEqual(fakeCallback);
+				expect(lambdaContext.done).not.toHaveBeenCalled();
+				done();
+			});
+			underTest.proxyRouter({a: 1}, lambdaContext, fakeCallback);
+		});
+	});
+
 	describe('CORS handling', function () {
 		var apiRequest;
 		beforeEach(function () {
