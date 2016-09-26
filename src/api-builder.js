@@ -17,6 +17,7 @@ module.exports = function ApiBuilder(options) {
 			}
 		},
 		requestFormat = getRequestFormat(options && options.requestFormat),
+		logger = (options && options.logger) || console.log,
 		methodConfigurations = {},
 		routes = {},
 		customCorsHandler,
@@ -25,7 +26,7 @@ module.exports = function ApiBuilder(options) {
 		unsupportedEventCallback,
 		authorizers,
 		v2DeprecationWarning = function (what) {
-			console.log(what + ' are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
+			logger(what + ' are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
 		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		interceptCallback,
@@ -87,6 +88,15 @@ module.exports = function ApiBuilder(options) {
 		},
 		isError = function (object) {
 			return object && (object.message !== undefined) && object.stack;
+		},
+		logError = function (err) {
+			var logInfo = err;
+			if (isApiResponse(err)) {
+				logInfo = JSON.stringify(err);
+			} else if (isError(err)) {
+				logInfo = err.stack;
+			}
+			logger(logInfo);
 		},
 		getErrorBody = function (contentType, handlerResult) {
 			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
@@ -166,6 +176,7 @@ module.exports = function ApiBuilder(options) {
 					}).then(function (result) {
 						return packResult(result, routingInfo, corsHeaders, 'success');
 					}).catch(function (error) {
+						logError(error);
 						return packResult(error, routingInfo, corsHeaders, 'error');
 					});
 				} else {

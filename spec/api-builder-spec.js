@@ -5,7 +5,7 @@ var ApiBuilder = require('../src/api-builder'),
 describe('ApiBuilder', function () {
 	'use strict';
 	var underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
-		postRequestHandler, prompter,
+		postRequestHandler, prompter, logger,
 		contentType = function () {
 			return responseHeaders('Content-Type');
 		},
@@ -26,7 +26,8 @@ describe('ApiBuilder', function () {
 
 	beforeEach(function () {
 		prompter = jasmine.createSpy();
-		underTest = new ApiBuilder({prompter: prompter});
+		logger = jasmine.createSpy();
+		underTest = new ApiBuilder({prompter: prompter, logger: logger});
 		requestHandler = jasmine.createSpy('handler');
 		postRequestHandler = jasmine.createSpy('postHandler');
 		lambdaContext = jasmine.createSpyObj('lambdaContext', ['done']);
@@ -602,6 +603,31 @@ describe('ApiBuilder', function () {
 						});
 					});
 				});
+				describe('error logging', function () {
+					it('logs stack from error objects', function (done) {
+						var e = new Error('exploded!');
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(logger).toHaveBeenCalledWith(e.stack);
+						}).then(done, done.fail);
+						requestHandler.and.throwError(e);
+					});
+					it('logs string error messages', function (done) {
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(logger).toHaveBeenCalledWith('boom!');
+						}).then(done, done.fail);
+						requestHandler.and.callFake(function () {
+							throw 'boom!';
+						});
+					});
+					it('logs JSON stringify of an API response object', function (done) {
+						var apiResp = new underTest.ApiResponse('boom!', {'X-Api': 1}, 404);
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(logger).toHaveBeenCalledWith(JSON.stringify(apiResp));
+						}).then(done, done.fail);
+						requestHandler.and.returnValue(Promise.reject(apiResp));
+
+					});
+				});
 				describe('result formatting', function () {
 					['application/json', 'application/json; charset=UTF-8'].forEach(function (respContentType) {
 						describe('when content type is ' + respContentType, function () {
@@ -616,6 +642,7 @@ describe('ApiBuilder', function () {
 								}).then(done, done.fail);
 								requestHandler.and.throwError('boom!');
 							});
+
 							it('includes string error messages', function (done) {
 								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
@@ -639,6 +666,12 @@ describe('ApiBuilder', function () {
 									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
 								}).then(done, done.fail);
 								requestHandler.and.returnValue(Promise.reject('boom!'));
+							});
+							it('extracts content from ApiResponse objects', function (done) {
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
+								}).then(done, done.fail);
+								requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('boom!', {'X-Api': 1}, 404)));
 							});
 							['', undefined, null, false].forEach(function (literal) {
 								it('uses blank message for [' + literal + ']', function (done) {
