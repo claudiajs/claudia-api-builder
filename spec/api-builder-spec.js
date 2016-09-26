@@ -349,24 +349,91 @@ describe('ApiBuilder', function () {
 					});
 				});
 				describe('header values', function () {
+					var contentType = function () {
+						return lambdaContext.done.calls.argsFor(0)[1].headers['Content-Type'];
+					};
 					describe('Content-Type', function () {
-						it('uses application/json as the content type by default', function () {
+						it('uses application/json as the content type by default', function (done) {
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('application/json');
+							}).then(done, done.fail);
+						});
+						it('uses content type is specified in the handler config', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/plain' }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/plain');
+							}).then(done, done.fail);
+						});
+						it('uses content type specified in a static header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'Content-Type': 'text/plain' } }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/plain');
+							}).then(done, done.fail);
+						});
+						it('works with mixed case specified in a static header', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'conTent-tyPe': 'text/plain' } }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/plain');
+							}).then(done, done.fail);
+						});
+						it('ignores static headers that do not specify content type', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'a-api-type': 'text/plain' } }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('application/json');
+							}).then(done, done.fail);
 
 						});
-						it('uses content type is specified in the handler config', function () {
-
+						it('ignores enumerated headers - backwards compatibility', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: ['a-api-type', 'text/plain'] }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('application/json');
+							}).then(done, done.fail);
 						});
-						it('uses content type specified in a static header', function () {
-
+						it('uses content type specified in a dynamic header', function (done) {
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Content-Type': 'text/xml'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/xml');
+							}).then(done, done.fail);
 						});
-						it('uses content type specified in a dynamic header', function () {
-
+						it('works with mixed case specified in dynamic header', function (done) {
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Content-Type': 'text/xml'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/xml');
+							}).then(done, done.fail);
 						});
-						it('uses dynamic header over everything else', function () {
-
+						it('uses dynamic header over everything else', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers: { 'Content-Type': 'text/plain' } }
+							});
+							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Content-Type': 'text/markdown'}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/markdown');
+							}).then(done, done.fail);
 						});
-						it('uses static header over handler config', function () {
-
+						it('uses static header over handler config', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { contentType: 'text/xml', headers: { 'Content-Type': 'text/plain' } }
+							});
+							requestHandler.and.returnValue('abc');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(contentType()).toEqual('text/plain');
+							}).then(done, done.fail);
 						});
 					});
 					describe('CORS headers', function () {

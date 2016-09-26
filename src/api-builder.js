@@ -1,5 +1,6 @@
 /*global module, require, Promise, console */
-var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request');
+var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
+	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(components) {
 	'use strict';
 	var self = this,
@@ -11,39 +12,54 @@ module.exports = function ApiBuilder(components) {
 		customCorsHeaders,
 		unsupportedEventCallback,
 		authorizers,
+		v2DeprecationWarning = function (what) {
+			console.log(what + ' are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
+		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		interceptCallback,
 		prompter = (components && components.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
+		mergeObjects = function (from, to) {
+			Object.keys(from).forEach(function (key) {
+				to[key] = from[key];
+			});
+			return to;
+		},
+		getContentType = function (configuration, result) {
+			var staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
+				dynamicHeader = (result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers)['content-type']),
+				staticConfig = configuration && configuration.contentType;
+
+			return dynamicHeader || staticHeader || staticConfig || 'application/json';
+		},
 		packResult = function (handlerResult, routingInfo, corsHeaders) {
 			var path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
 				successConfiguration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success,
 				customHeaders = successConfiguration && successConfiguration.headers,
+				contentType = getContentType(successConfiguration, handlerResult),
 				result = {
 					statusCode: 200,
-					headers: corsHeaders,
+					headers: { 'Content-Type': contentType },
 					body: handlerResult
 				};
+			mergeObjects(corsHeaders, result.headers);
 			if (typeof successConfiguration === 'number') {
 				result.statusCode = successConfiguration;
 			} else if (successConfiguration && successConfiguration.code) {
 				result.statusCode = successConfiguration && successConfiguration.code;
 			}
 			if (customHeaders) {
-				console.log('enumerated headers are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
-				if (!Array.isArray(customHeaders)) {
-					Object.keys(customHeaders).forEach(function (headerName) {
-						result.header[headerName] = customHeaders[headerName];
-					});
+				if (Array.isArray(customHeaders)) {
+					v2DeprecationWarning('enumerated headers');
+				} else {
+					mergeObjects(customHeaders, result.headers);
 				}
 			}
 			if (isApiResponse(handlerResult)) {
-				Object.keys(handlerResult.headers).forEach(function (headerName) {
-					result.header[headerName] = customHeaders[headerName];
-				});
+				mergeObjects(handlerResult.headers, result.headers);
 				if (handlerResult.code) {
 					result.statusCode = handlerResult.code;
 				}
@@ -178,7 +194,7 @@ module.exports = function ApiBuilder(components) {
 		this.code = code;
 	};
 	self.unsupportedEvent = function (callback) {
-		console.log('.unsupportedEvent is deprecated and will be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
+		v2DeprecationWarning('.unsupportedEvent handlers');
 		unsupportedEventCallback = callback;
 	};
 	self.intercept = function (callback) {
@@ -222,7 +238,7 @@ module.exports = function ApiBuilder(components) {
 	self.router = function (event, context, callback) {
 		requestFormat = 'DEPRECATED';
 		event.lambdaContext = context;
-		console.log('.router is deprecated and will be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
+		v2DeprecationWarning('.router methods');
 		return self.proxyRouter(event, context, callback);
 	};
 	self.addPostDeployStep = function (name, stepFunction) {

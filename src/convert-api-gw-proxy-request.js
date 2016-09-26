@@ -1,5 +1,6 @@
 /*global module, require */
 var qs = require('querystring'),
+	lowercaseKeys = require('./lowercase-keys'),
 	getCanonicalContentType = function (normalizedHeaders) {
 		'use strict';
 		var contentType = normalizedHeaders['content-type'] || '';
@@ -7,16 +8,6 @@ var qs = require('querystring'),
 			contentType = contentType.split(';')[0];
 		}
 		return contentType;
-	},
-	lowercaseKeys = function (object) {
-		'use strict';
-		var result = {};
-		if (object) {
-			Object.keys(object).forEach(function (key) {
-				result[key.toLowerCase()] = object[key];
-			});
-		}
-		return result;
 	},
 	copyProperties = function (from, to, keyMappings) {
 		'use strict';
