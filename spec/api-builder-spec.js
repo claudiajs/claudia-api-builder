@@ -611,31 +611,72 @@ describe('ApiBuilder', function () {
 
 				});
 				describe('result formatting', function () {
+					var	responseBody = function () {
+							return lambdaContext.done.calls.argsFor(0)[1].body;
+						};
+
 					describe('when content type is application/json', function () {
-						it('stringifies objects', function () {
-
+						beforeEach(function () {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'Content-Type': 'application/json' } }
+							});
 						});
-						it('JSON-stringifies non objects for application/json', function () {
-
+						it('stringifies objects', function (done) {
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('{"hi":"there"}');
+							}).then(done, done.fail);
 						});
-						it('uses blank object for empty string', function () {
-
+						it('JSON-stringifies non objects for application/json', function (done) {
+							requestHandler.and.returnValue('OK');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('"OK"');
+							}).then(done, done.fail);
+						});
+						['', undefined].forEach(function (literal) {
+							it('uses blank object for [' + literal + ']', function (done) {
+								requestHandler.and.returnValue(literal);
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('{}');
+								}).then(done, done.fail);
+							});
 						});
 						[null, false].forEach(function (literal) {
-							it('uses literal version for ' + literal, function () {
-
+							it('uses literal version for ' + literal, function (done) {
+								requestHandler.and.returnValue(literal);
+								underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+									expect(responseBody()).toEqual('' + literal);
+								}).then(done, done.fail);
 							});
 						});
 					});
 					describe('when content type is not JSON', function () {
-						it('stringifies objects', function () {
-
+						beforeEach(function () {
+							underTest.get('/echo', requestHandler, {
+								success: { headers: { 'Content-Type': 'application/xml' } }
+							});
 						});
-						it('returns literal results for non-json responses', function () {
-
+						it('stringifies objects', function (done) {
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('{"hi":"there"}');
+							}).then(done, done.fail);
 						});
-						it('uses blank string for falsy responses', function () {
-
+						it('returns literal results for non-json responses', function (done) {
+							requestHandler.and.returnValue('OK');
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('OK');
+							}).then(done, done.fail);
+						});
+						describe('uses blank string for', function () {
+							[null, false, '', undefined].forEach(function (resp) {
+								it('[' + resp + ']', function (done) {
+									requestHandler.and.returnValue(resp);
+									underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+										expect(responseBody()).toEqual('');
+									}).then(done, done.fail);
+								});
+							});
 						});
 					});
 				});

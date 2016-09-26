@@ -48,6 +48,24 @@ module.exports = function ApiBuilder(components) {
 				staticHeader = configuration && configuration.headers && lowercaseKeys(configuration.headers).location;
 			return dynamicHeader || dynamicBody || staticHeader;
 		},
+		getBody = function (contentType, handlerResult) {
+			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
+			if (contentType === 'application/json') {
+				if (contents === '' || contents ===	undefined) {
+					return '{}';
+				} else {
+					return JSON.stringify(contents);
+				}
+			} else {
+				if (!contents) {
+					return '';
+				} else if (typeof contents === 'object') {
+					return JSON.stringify(contents);
+				} else {
+					return String(contents);
+				}
+			}
+		},
 		packResult = function (handlerResult, routingInfo, corsHeaders) {
 			var path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
@@ -58,7 +76,7 @@ module.exports = function ApiBuilder(components) {
 				result = {
 					statusCode: statusCode,
 					headers: { 'Content-Type': contentType },
-					body: handlerResult
+					body: getBody(contentType, handlerResult)
 				};
 			mergeObjects(corsHeaders, result.headers);
 			if (customHeaders) {
@@ -70,7 +88,6 @@ module.exports = function ApiBuilder(components) {
 			}
 			if (isApiResponse(handlerResult)) {
 				mergeObjects(handlerResult.headers, result.headers);
-				result.body = handlerResult.response;
 			}
 			if (isRedirect(statusCode)) {
 				result.headers.Location = getRedirectLocation(successConfiguration, handlerResult);
