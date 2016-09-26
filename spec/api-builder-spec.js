@@ -5,7 +5,25 @@ var ApiBuilder = require('../src/api-builder'),
 describe('ApiBuilder', function () {
 	'use strict';
 	var underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
-		postRequestHandler, prompter;
+		postRequestHandler, prompter,
+		contentType = function () {
+			return responseHeaders('Content-Type');
+		},
+		responseHeaders = function (headerName) {
+			var headers = lambdaContext.done.calls.argsFor(0)[1].headers;
+			if (headerName) {
+				return headers[headerName];
+			} else {
+				return headers;
+			}
+		},
+		responseStatusCode = function () {
+			return lambdaContext.done.calls.argsFor(0)[1].statusCode;
+		},
+		responseBody = function () {
+			return lambdaContext.done.calls.argsFor(0)[1].body;
+		};
+
 	beforeEach(function () {
 		prompter = jasmine.createSpy();
 		underTest = new ApiBuilder({prompter: prompter});
@@ -226,15 +244,13 @@ describe('ApiBuilder', function () {
 				it('can handle synchronous exceptions in the routed method', function (done) {
 					requestHandler.and.throwError('Error');
 					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-						expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
+						expect(responseStatusCode()).toEqual(500);
 					}).then(done, done.fail);
 				});
 				it('can handle successful synchronous results from the request handler', function (done) {
 					requestHandler.and.returnValue({hi: 'there'});
 					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-						expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-							statusCode: 200
-						}));
+						expect(responseStatusCode()).toEqual(200);
 					}).then(done, done.fail);
 				});
 			});
@@ -252,24 +268,20 @@ describe('ApiBuilder', function () {
 				it('synchronously handles plain objects that have a then key, but are not promises', function (done) {
 					requestHandler.and.returnValue({then: 1});
 					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
-							statusCode: 200
-						}));
+						expect(responseStatusCode()).toEqual(200);
 					}).then(done, done.fail);
 				});
 				it('handles request promise rejecting', function (done) {
 					requestHandler.and.returnValue(requestPromise);
 					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-						expect(lambdaContext.done).toHaveBeenCalledWith('Abort');
+						expect(responseStatusCode()).toEqual(500);
 					}).then(done, done.fail);
 					requestReject('Abort');
 				});
 				it('handles request promise resolving', function (done) {
 					requestHandler.and.returnValue(requestPromise);
 					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
-							statusCode: 200
-						}));
+						expect(responseStatusCode()).toEqual(200);
 					}).then(done, done.fail);
 					requestResolve({hi: 'there'});
 				});
@@ -279,16 +291,78 @@ describe('ApiBuilder', function () {
 		describe('result packaging', function () {
 			describe('error handling', function () {
 
-
+				describe('status code', function () {
+					it('uses 500 by default', function (done) {
+						requestHandler.and.throwError('Oh!');
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(500);
+						}).then(done, done.fail);
+					});
+					it('can configure code with handler error as a number', function (done) {
+						requestHandler.and.throwError('Oh!');
+						underTest.get('/echo', requestHandler, {
+							error: 404
+						});
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(404);
+						}).then(done, done.fail);
+					});
+					it('can configure code with handler error as an object key', function (done) {
+						requestHandler.and.throwError('Oh!');
+						underTest.get('/echo', requestHandler, {
+							error: { code: 404 }
+						});
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(404);
+						}).then(done, done.fail);
+					});
+					it('uses a default if handler error is defined as an object, but without code', function (done) {
+						requestHandler.and.throwError('Oh!');
+						underTest.get('/echo', requestHandler, {
+							error: { contentType: 'text/plain' }
+						});
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(500);
+						}).then(done, done.fail);
+					});
+					it('uses dynamic response code if provided', function (done) {
+						requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {}, 403)));
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(403);
+						}).then(done, done.fail);
+					});
+					it('uses dynamic response code over static definitions', function (done) {
+						requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {}, 503)));
+						underTest.get('/echo', requestHandler, {
+							error: 404
+						});
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(503);
+						}).then(done, done.fail);
+					});
+					it('uses a static definition with ApiResponse if code is not set', function (done) {
+						underTest.get('/echo', requestHandler, {
+							error: 404
+						});
+						requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {})));
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(404);
+						}).then(done, done.fail);
+					});
+					it('uses 500 with ApiResponse if code is not set and there is no static override', function (done) {
+						requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {})));
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseStatusCode()).toEqual(500);
+						}).then(done, done.fail);
+					});
+				});
 			});
 			describe('success handling', function () {
 				describe('status code', function () {
 					it('uses 200 by default', function (done) {
 						requestHandler.and.returnValue({hi: 'there'});
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 200
-							}));
+							expect(responseStatusCode()).toEqual(200);
 						}).then(done, done.fail);
 					});
 					it('can configure success code with handler success as a number', function (done) {
@@ -297,9 +371,7 @@ describe('ApiBuilder', function () {
 							success: 204
 						});
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 204
-							}));
+							expect(responseStatusCode()).toEqual(204);
 						}).then(done, done.fail);
 					});
 					it('can configure success code with handler success as an object key', function (done) {
@@ -308,9 +380,7 @@ describe('ApiBuilder', function () {
 							success: { code: 204 }
 						});
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 204
-							}));
+							expect(responseStatusCode()).toEqual(204);
 						}).then(done, done.fail);
 					});
 					it('uses a default if success is defined as an object, but without code', function (done) {
@@ -319,17 +389,13 @@ describe('ApiBuilder', function () {
 							success: { contentType: 'text/plain' }
 						});
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 200
-							}));
+							expect(responseStatusCode()).toEqual(200);
 						}).then(done, done.fail);
 					});
 					it('uses dynamic response code if provided', function (done) {
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 203
-							}));
+							expect(responseStatusCode()).toEqual(203);
 						}).then(done, done.fail);
 					});
 					it('uses dynamic response code over static definitions', function (done) {
@@ -338,9 +404,7 @@ describe('ApiBuilder', function () {
 						});
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}, 203));
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 203
-							}));
+							expect(responseStatusCode()).toEqual(203);
 						}).then(done, done.fail);
 					});
 					it('uses a static definition with ApiResponse if code is not set', function (done) {
@@ -349,32 +413,17 @@ describe('ApiBuilder', function () {
 						});
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 204
-							}));
+							expect(responseStatusCode()).toEqual(204);
 						}).then(done, done.fail);
 					});
 					it('uses 200 with ApiResponse if code is not set and there is no static override', function (done) {
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-							expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
-								statusCode: 200
-							}));
+							expect(responseStatusCode()).toEqual(200);
 						}).then(done, done.fail);
 					});
 				});
 				describe('header values', function () {
-					var contentType = function () {
-							return responseHeaders('Content-Type');
-						},
-						responseHeaders = function (headerName) {
-							var headers = lambdaContext.done.calls.argsFor(0)[1].headers;
-							if (headerName) {
-								return headers[headerName];
-							} else {
-								return headers;
-							}
-						};
 					describe('Content-Type', function () {
 						it('uses application/json as the content type by default', function (done) {
 							requestHandler.and.returnValue({hi: 'there'});
@@ -626,10 +675,6 @@ describe('ApiBuilder', function () {
 
 				});
 				describe('result formatting', function () {
-					var	responseBody = function () {
-							return lambdaContext.done.calls.argsFor(0)[1].body;
-						};
-
 					describe('when content type is application/json', function () {
 						beforeEach(function () {
 							underTest.get('/echo', requestHandler, {

@@ -49,10 +49,14 @@ module.exports = function ApiBuilder(options) {
 
 			return dynamicHeader || staticHeader || staticConfig || 'application/json';
 		},
-		getStatusCode = function (configuration, result) {
-			var staticCode = (configuration && configuration.code) || (typeof configuration === 'number' && configuration),
+		getStatusCode = function (configuration, result, resultType) {
+			var defaultCode = {
+					'success': 200,
+					'error': 500
+				},
+				staticCode = (configuration && configuration.code) || (typeof configuration === 'number' && configuration),
 				dynamicCode = (result && isApiResponse(result) && result.code);
-			return dynamicCode || staticCode || 200;
+			return dynamicCode || staticCode || defaultCode[resultType];
 		},
 		getRedirectLocation = function (configuration, result) {
 			var dynamicHeader = result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers).location,
@@ -78,13 +82,13 @@ module.exports = function ApiBuilder(options) {
 				}
 			}
 		},
-		packResult = function (handlerResult, routingInfo, corsHeaders) {
+		packResult = function (handlerResult, routingInfo, corsHeaders, resultType) {
 			var path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
-				successConfiguration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success,
-				customHeaders = successConfiguration && successConfiguration.headers,
-				contentType = getContentType(successConfiguration, handlerResult),
-				statusCode = getStatusCode(successConfiguration, handlerResult),
+				configuration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method][resultType],
+				customHeaders = configuration && configuration.headers,
+				contentType = getContentType(configuration, handlerResult),
+				statusCode = getStatusCode(configuration, handlerResult, resultType),
 				result = {
 					statusCode: statusCode,
 					headers: { 'Content-Type': contentType },
@@ -102,7 +106,7 @@ module.exports = function ApiBuilder(options) {
 				mergeObjects(handlerResult.headers, result.headers);
 			}
 			if (isRedirect(statusCode)) {
-				result.headers.Location = getRedirectLocation(successConfiguration, handlerResult);
+				result.headers.Location = getRedirectLocation(configuration, handlerResult);
 			}
 			return result;
 		},
@@ -140,7 +144,9 @@ module.exports = function ApiBuilder(options) {
 					return Promise.resolve().then(function () {
 						return handler(event, context);
 					}).then(function (result) {
-						return packResult(result, routingInfo, corsHeaders);
+						return packResult(result, routingInfo, corsHeaders, 'success');
+					}).catch(function (error) {
+						return packResult(error, routingInfo, corsHeaders, 'error');
 					});
 				} else {
 					return Promise.reject('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
