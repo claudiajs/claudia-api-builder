@@ -1,10 +1,22 @@
 /*global module, require, Promise, console */
 var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
 	lowercaseKeys = require('./lowercase-keys');
-module.exports = function ApiBuilder(components) {
+module.exports = function ApiBuilder(options) {
 	'use strict';
 	var self = this,
-		requestFormat = 'CLAUDIA_API_BUILDER',
+		getRequestFormat = function (newFormat) {
+			var supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
+			if (!newFormat) {
+				return 'CLAUDIA_API_BUILDER';
+			} else {
+				if (supportedFormats.indexOf(newFormat) >= 0) {
+					return newFormat;
+				} else {
+					throw 'Unsupported request format ' + newFormat;
+				}
+			}
+		},
+		requestFormat = getRequestFormat(options && options.requestFormat),
 		methodConfigurations = {},
 		routes = {},
 		customCorsHandler,
@@ -17,7 +29,7 @@ module.exports = function ApiBuilder(components) {
 		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		interceptCallback,
-		prompter = (components && components.prompter) || require('./ask'),
+		prompter = (options && options.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
@@ -253,14 +265,6 @@ module.exports = function ApiBuilder(components) {
 			}
 		}).catch(handleError);
 
-	};
-	self.setRequestFormat = function (newFormat) {
-		var supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
-		if (supportedFormats.indexOf(newFormat) >= 0) {
-			requestFormat = newFormat;
-		} else {
-			throw 'Unsupported request format ' + newFormat;
-		}
 	};
 	self.router = function (event, context, callback) {
 		requestFormat = 'DEPRECATED';

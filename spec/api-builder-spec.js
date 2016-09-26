@@ -80,7 +80,7 @@ describe('ApiBuilder', function () {
 			});
 		});
 	});
-	describe('routing methods', function () {
+	describe('router', function () {
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
 			it('can route calls to a ' + method + '  method', function (done) {
 				var apiRequest = {
@@ -119,14 +119,9 @@ describe('ApiBuilder', function () {
 				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
 			}).then(done, done.fail);
 		});
-		it('does not convert the request before routing if requestFormat = AWS_PROXY', function (done) {
-			underTest.setRequestFormat('AWS_PROXY');
-			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
-				expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext);
-			}).then(done, done.fail);
-		});
 		it('converts the request if request format = CLAUDIA_API_BUILDER', function (done) {
-			underTest.setRequestFormat('CLAUDIA_API_BUILDER');
+			underTest = new ApiBuilder({requestFormat: 'CLAUDIA_API_BUILDER'});
+			underTest.get('/', requestHandler);
 			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 				expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
 					lambdaContext: lambdaContext,
@@ -135,6 +130,26 @@ describe('ApiBuilder', function () {
 				}), lambdaContext);
 			}).then(done, done.fail);
 		});
+		it('does not convert the request before routing if requestFormat = AWS_PROXY', function (done) {
+			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
+			underTest.get('/', requestHandler);
+			underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+				expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext);
+			}).then(done, done.fail);
+		});
+		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
+			it('can route calls to a ' + method + '  method', function (done) {
+				proxyRequest.requestContext.httpMethod = method;
+				proxyRequest.requestContext.resourcePath = '/test';
+				apiRequest.context.method = method;
+				apiRequest.context.path = '/test';
+				underTest[method.toLowerCase()]('/test', requestHandler);
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+					expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				}).then(done, done.fail);
+			});
+		});
+
 	});
 	describe('call execution', function () {
 		var apiRequest, proxyRequest;
@@ -662,10 +677,22 @@ describe('ApiBuilder', function () {
 								expect(responseBody()).toEqual('{"hi":"there"}');
 							}).then(done, done.fail);
 						});
-						it('returns literal results for non-json responses', function (done) {
+						it('returns literal results for strings', function (done) {
 							requestHandler.and.returnValue('OK');
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 								expect(responseBody()).toEqual('OK');
+							}).then(done, done.fail);
+						});
+						it('returns string results for numbers', function (done) {
+							requestHandler.and.returnValue(123);
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('123');
+							}).then(done, done.fail);
+						});
+						it('returns string results for true', function (done) {
+							requestHandler.and.returnValue(true);
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('true');
 							}).then(done, done.fail);
 						});
 						describe('uses blank string for', function () {
