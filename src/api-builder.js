@@ -17,48 +17,46 @@ module.exports = function ApiBuilder(components) {
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
-		packResult = function (handlerResult, route, method) {
-			var path = route.replace(/^\//, ''),
-				customHeaders = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success && methodConfigurations[path][method].success.headers;
-
-			if (isApiResponse(handlerResult)) {
-				if (!customHeaders) {
-					throw 'cannot use ApiResponse without enumerating headers in ' + method + ' ' + route;
-				}
+		packResult = function (handlerResult, routingInfo, corsHeaders) {
+			var path = routingInfo.path.replace(/^\//, ''),
+				method = routingInfo.method,
+				successConfiguration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].success,
+				customHeaders = successConfiguration && successConfiguration.headers,
+				result = {
+					statusCode: 200,
+					headers: corsHeaders,
+					body: handlerResult
+				};
+			if (customHeaders) {
+				console.log('enumerated headers are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
 				if (!Array.isArray(customHeaders)) {
-					throw 'cannot use ApiResponse with default header values in ' + method + ' ' + route;
+					Object.keys(customHeaders).forEach(function (headerName) {
+						result.header[headerName] = customHeaders[headerName];
+					});
 				}
-				Object.keys(handlerResult.headers).forEach(function (header) {
-					if (customHeaders.indexOf(header) < 0) {
-						throw 'unexpected header ' + header + ' in ' + method + ' ' + route;
-					}
+			}
+			if (isApiResponse(handlerResult)) {
+				Object.keys(handlerResult.headers).forEach(function (headerName) {
+					result.header[headerName] = customHeaders[headerName];
 				});
-				return { response: handlerResult.response, headers: handlerResult.headers };
+				result.body = handlerResult.response;
 			}
-			if (customHeaders && Array.isArray(customHeaders)) {
-				return { response: handlerResult, headers: {} };
-			}
-			return handlerResult;
+			return result;
 		},
-		routeCors = function (request) {
+		getCorsHeaders = function (request) {
 			return Promise.resolve().then(function () {
 				if (customCorsHandler === false) {
 					return '';
 				} else if (customCorsHandler) {
-					// todo: translate to header value
 					return customCorsHandler(request);
 				} else {
 					return '*';
 				}
 			}).then(function (corsOrigin) {
 				return {
-					statusCode: 200,
-					headers: {
-						'Access-Control-Allow-Origin': corsOrigin,
-						'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
-						'Access-Control-Allow-Methods': corsOrigin && supportedMethods.join(',') + ',OPTIONS'
-					},
-					body: ''
+					'Access-Control-Allow-Origin': corsOrigin,
+					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
+					'Access-Control-Allow-Methods': corsOrigin && supportedMethods.join(',') + ',OPTIONS'
 				};
 			});
 		},
@@ -67,19 +65,25 @@ module.exports = function ApiBuilder(components) {
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			if (routingInfo.method === 'OPTIONS') {
-				return routeCors(event);
-			}
 			handler = routes[routingInfo.path] && routes[routingInfo.path][routingInfo.method];
-			if (handler) {
-				return Promise.resolve().then(function () {
-					return handler(event, context);
-				}).then(function (result) {
-					return packResult(result, routingInfo.path, routingInfo.method);
-				});
-			} else {
-				return Promise.reject('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
-			}
+			return getCorsHeaders(event).then(function (corsHeaders) {
+				if (routingInfo.method === 'OPTIONS') {
+					return {
+						statusCode: 200,
+						body: '',
+						headers: corsHeaders
+					};
+				} else if (handler) {
+					return Promise.resolve().then(function () {
+						return handler(event, context);
+					}).then(function (result) {
+						return packResult(result, routingInfo, corsHeaders);
+					});
+				} else {
+					return Promise.reject('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
+				}
+			});
+
 		},
 		getRequestRoutingInfo = function (request) {
 			if (requestFormat === 'AWS_PROXY') {

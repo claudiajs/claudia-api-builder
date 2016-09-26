@@ -94,7 +94,6 @@ describe('ApiBuilder', function () {
 				underTest[method.toLowerCase()]('/test', requestHandler);
 				underTest.router(apiRequest, lambdaContext).then(function () {
 					expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-					expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
 				}).then(done, done.fail);
 			});
 		});
@@ -139,7 +138,7 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 		});
 	});
-	describe('routing calls', function () {
+	describe('call execution', function () {
 		var apiRequest;
 		beforeEach(function () {
 			underTest.get('/echo', requestHandler);
@@ -153,106 +152,238 @@ describe('ApiBuilder', function () {
 				}
 			};
 		});
-		it('can route to /', function (done) {
-			underTest.get('/', postRequestHandler);
-			apiRequest.context.path = '/';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			}).then(done, done.fail);
-		});
-		it('complains about an unsuported route', function (done) {
-			apiRequest.context.path = '/no';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no');
-			}).then(done, done.fail);
-		});
-		it('complains about an unsupported call', function (done) {
-			underTest.router({}, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
-			}).then(done, done.fail);
-		});
-		it('can route calls to a single GET method', function (done) {
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
-		});
-		it('can route calls in mixed case', function (done) {
-			underTest.get('/CamelCase', postRequestHandler);
-			apiRequest.context.path = '/CamelCase';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-			}).then(done, done.fail);
-		});
-		it('can route calls configured without a slash', function (done) {
-			underTest.post('echo', postRequestHandler);
-			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
-		});
-		it('can route to multiple methods', function (done) {
-			underTest.post('/echo', postRequestHandler);
-			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
-		});
-		it('can route to multiple routes', function (done) {
-			underTest.post('/echo2', postRequestHandler);
-			apiRequest.context.path = '/echo2';
-			apiRequest.context.method = 'POST';
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, undefined);
-			}).then(done, done.fail);
-		});
-		it('can handle synchronous exceptions in the routed method', function (done) {
-			requestHandler.and.throwError('Error');
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
-			}).then(done, done.fail);
-		});
-		it('can handle successful synchronous results from the request handler', function (done) {
-			requestHandler.and.returnValue({hi: 'there'});
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
-			}).then(done, done.fail);
-		});
-		it('handles response promises without resolving', function (done) {
-			requestHandler.and.returnValue(requestPromise);
-			underTest.router(apiRequest, lambdaContext).then(done.fail, done.fail);
-			Promise.resolve().then(function () {
-				expect(requestHandler).toHaveBeenCalled();
-				expect(lambdaContext.done).not.toHaveBeenCalled();
-				done();
+
+		describe('routing calls', function () {
+			it('can route to /', function (done) {
+				underTest.get('/', postRequestHandler);
+				apiRequest.context.path = '/';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				}).then(done, done.fail);
+			});
+			it('complains about an unsuported route', function (done) {
+				apiRequest.context.path = '/no';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no');
+				}).then(done, done.fail);
+			});
+			it('complains about an unsupported call', function (done) {
+				underTest.router({}, lambdaContext).then(function () {
+					expect(lambdaContext.done).toHaveBeenCalledWith('event does not contain routing information');
+				}).then(done, done.fail);
+			});
+			it('can route calls to a single GET method', function (done) {
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(requestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				}).then(done, done.fail);
+			});
+			it('can route calls in mixed case', function (done) {
+				underTest.get('/CamelCase', postRequestHandler);
+				apiRequest.context.path = '/CamelCase';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+				}).then(done, done.fail);
+			});
+			it('can route calls configured without a slash', function (done) {
+				underTest.post('echo', postRequestHandler);
+				apiRequest.context.method = 'POST';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+					expect(requestHandler).not.toHaveBeenCalled();
+				}).then(done, done.fail);
+			});
+			it('can route to multiple methods', function (done) {
+				underTest.post('/echo', postRequestHandler);
+				apiRequest.context.method = 'POST';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+					expect(requestHandler).not.toHaveBeenCalled();
+				}).then(done, done.fail);
+			});
+			it('can route to multiple routes', function (done) {
+				underTest.post('/echo2', postRequestHandler);
+				apiRequest.context.path = '/echo2';
+				apiRequest.context.method = 'POST';
+				underTest.router(apiRequest, lambdaContext).then(function () {
+					expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+					expect(requestHandler).not.toHaveBeenCalled();
+				}).then(done, done.fail);
 			});
 		});
-		it('checks that .then is actually a function to distinguish promises from false positives', function (done) {
-			requestHandler.and.returnValue({then: 1});
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {then: 1});
-			}).then(done, done.fail);
+		describe('response processing', function () {
+			describe('synchronous', function () {
+				it('can handle synchronous exceptions in the routed method', function (done) {
+					requestHandler.and.throwError('Error');
+					underTest.router(apiRequest, lambdaContext).then(function () {
+						expect(lambdaContext.done).toHaveBeenCalledWith(jasmine.any(Error));
+					}).then(done, done.fail);
+				});
+				it('can handle successful synchronous results from the request handler', function (done) {
+					requestHandler.and.returnValue({hi: 'there'});
+					underTest.router(apiRequest, lambdaContext).then(function () {
+						expect(lambdaContext.done).toHaveBeenCalledWith(null,  jasmine.objectContaining({
+							statusCode: 200
+						}));
+					}).then(done, done.fail);
+				});
+			});
+			describe('asynchronous', function () {
+				it('waits for promises to resolve or reject before responding', function (done) {
+					requestHandler.and.returnValue(requestPromise);
+					underTest.router(apiRequest, lambdaContext).then(done.fail, done.fail);
+					Promise.resolve().then(function () {
+						expect(requestHandler).toHaveBeenCalled();
+						expect(lambdaContext.done).not.toHaveBeenCalled();
+						done();
+					});
+				});
+
+				it('synchronously handles plain objects that have a then key, but are not promises', function (done) {
+					requestHandler.and.returnValue({then: 1});
+					underTest.router(apiRequest, lambdaContext).then(function () {
+						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
+							statusCode: 200
+						}));
+					}).then(done, done.fail);
+				});
+				it('handles request promise rejecting', function (done) {
+					requestHandler.and.returnValue(requestPromise);
+					underTest.router(apiRequest, lambdaContext).then(function () {
+						expect(lambdaContext.done).toHaveBeenCalledWith('Abort');
+					}).then(done, done.fail);
+					requestReject('Abort');
+				});
+				it('handles request promise resolving', function (done) {
+					requestHandler.and.returnValue(requestPromise);
+					underTest.router(apiRequest, lambdaContext).then(function () {
+						expect(lambdaContext.done).toHaveBeenCalledWith(null, jasmine.objectContaining({
+							statusCode: 200
+						}));
+					}).then(done, done.fail);
+					requestResolve({hi: 'there'});
+				});
+			});
 		});
-		it('handles request promise rejecting', function (done) {
-			requestHandler.and.returnValue(requestPromise);
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('Abort');
-			}).then(done, done.fail);
-			requestReject('Abort');
+
+		describe('result packaging', function () {
+			describe('error handling', function () {
+
+
+			});
+			describe('success handling', function () {
+				describe('status code', function () {
+					it('uses 200 by default', function () {
+
+					});
+					it('can configure success code with handler success as a number', function () {
+
+					});
+					it('can configure success code with handler success as an object key', function () {
+
+					});
+					it('uses dynamic response code if provided', function () {
+
+					});
+					it('uses dynamic response code over static definitions', function () {
+
+					});
+				});
+				describe('header values', function () {
+					describe('Content-Type', function () {
+						it('uses application/json as the content type by default', function () {
+
+						});
+						it('uses content type is specified in the handler config', function () {
+
+						});
+						it('uses content type specified in a static header', function () {
+
+						});
+						it('uses content type specified in a dynamic header', function () {
+
+						});
+						it('uses dynamic header over everything else', function () {
+
+						});
+						it('uses static header over handler config', function () {
+
+						});
+					});
+					describe('CORS headers', function () {
+						it('automatically includes CORS headers with the response', function () {
+
+						});
+						it('uses custom origin if provided', function () {
+
+						});
+						it('uses custom Allow-Headers if provided', function () {
+
+						});
+					});
+					describe('static headers', function () {
+						it('can supply additional static headers in the handler config', function () {
+
+						});
+						it('ignores enumerated static headers -- backwards compatibility', function () {
+
+						});
+						it('overrides CORS headers with static headers', function () {
+
+						});
+					});
+					describe('dynamic headers', function () {
+						it('can supply additional dynamic headers in the response', function () {
+
+						});
+						it('overrides static headers with dynamic headers', function () {
+
+						});
+						it('overrides CORS headers with dynamic headers', function () {
+
+						});
+					});
+					describe('when result code is a redirect', function () {
+						it('packs the result into the location header', function () {
+
+						});
+						it('uses the dynamic headers if provided', function () {
+
+						});
+					});
+
+				});
+				describe('result formatting', function () {
+					describe('when content type is application/json', function () {
+						it('stringifies objects', function () {
+
+						});
+						it('JSON-stringifies non objects for application/json', function () {
+
+						});
+						it('uses blank object for empty string', function () {
+
+						});
+						[null, false].forEach(function (literal) {
+							it('uses literal version for ' + literal, function () {
+
+							});
+						});
+					});
+					describe('when content type is not JSON', function () {
+						it('stringifies objects', function () {
+
+						});
+						it('returns literal results for non-json responses', function () {
+
+						});
+						it('uses blank string for falsy responses', function () {
+
+						});
+					});
+				});
+			});
 		});
-		it('handles request promise resolving', function (done) {
-			requestHandler.and.returnValue(requestPromise);
-			underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {hi: 'there'});
-			}).then(done, done.fail);
-			requestResolve({hi: 'there'});
-		});
+
 		describe('unsupported event format', function () {
 			it('causes lambda context to complete with error if no custom handler', function (done) {
 				underTest.router({}, lambdaContext).then(function () {
@@ -290,10 +421,10 @@ describe('ApiBuilder', function () {
 			it('rejects if the intercept throws an exception', function (done) {
 				interceptSpy.and.throwError('BOOM');
 				underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(postRequestHandler).not.toHaveBeenCalled();
-				expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
-			}).then(done, done.fail);
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).not.toHaveBeenCalled();
+					expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
+				}).then(done, done.fail);
 			});
 			it('routes the event returned from intercept', function (done) {
 				interceptSpy.and.returnValue({
@@ -306,17 +437,17 @@ describe('ApiBuilder', function () {
 					}
 				});
 				underTest.router(apiRequest, lambdaContext).then(function () {
-				expect(requestHandler).not.toHaveBeenCalled();
-				expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
-					context: {
-						path: '/echo',
-						method: 'POST'
-					},
-					queryString: {
-						c: 'd'
-					}
-				}), lambdaContext);
-			}).then(done, done.fail);
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+						context: {
+							path: '/echo',
+							method: 'POST'
+						},
+						queryString: {
+							c: 'd'
+						}
+					}), lambdaContext);
+				}).then(done, done.fail);
 			});
 			it('routes the event resolved by the intercept promise', function (done) {
 				interceptSpy.and.returnValue(Promise.resolve({
@@ -357,65 +488,6 @@ describe('ApiBuilder', function () {
 					expect(lambdaContext.done).toHaveBeenCalledWith(null, null);
 				}).then(done, done.fail);
 			});
-		});
-	});
-	describe('custom headers', function () {
-		beforeEach(function () {
-			underTest.get('/no-headers', requestHandler);
-			underTest.get('/success-default', requestHandler, {success: {headers: { 'content-type': 'text/markdown', 'set-cookie': 'false'}}});
-			underTest.get('/success-no-default', requestHandler, {success: {headers: ['content-type', 'set-cookie']}});
-			underTest.get('/error-default', requestHandler, {error: {headers: { 'content-type': 'text/plain', 'set-cookie': 'true'}}});
-			underTest.get('/error-no-default', requestHandler, {error: {headers: ['content-type', 'set-cookie']}});
-		});
-		it('handles synchronous result/header responses for headers without defaults', function (done) {
-			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {response: {hi: 'there'}, headers: {'content-type': 'text/markdown'}});
-			}).then(done, done.fail);
-		});
-		it('handles promise result/header resolutions for headers without defaults', function (done) {
-			requestHandler.and.returnValue(requestPromise);
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {response: {hi: 'there'}, headers: {'content-type': 'text/markdown'}});
-			}).then(done, done.fail);
-			requestResolve(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-		});
-		it('embeds response into ApiResponse for success templates where headers are enumerated without defaults', function (done) {
-			requestHandler.and.returnValue(requestPromise);
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, {response: {hi: 'there'}, headers: {}});
-			}).then(done, done.fail);
-			requestResolve({hi: 'there'});
-		});
-		it('ignores headers when they are specified with defaults in success templates', function (done) {
-			requestHandler.and.returnValue('hi there');
-			underTest.router({ context: { path: '/success-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(null, 'hi there');
-			}).then(done, done.fail);
-		});
-		it('reports an error if apiresponse is used without enumerated headers', function (done) {
-			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({context: {path: '/no-headers', method: 'GET'}}, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse without enumerating headers in GET /no-headers');
-			}).then(done, done.fail);
-		});
-		it('reports an error if apiresponse is used with headers using defaults', function (done) {
-			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-type': 'text/markdown'}));
-			underTest.router({context: {path: '/success-default', method: 'GET'}}, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('cannot use ApiResponse with default header values in GET /success-default');
-			}).then(done, done.fail);
-		});
-		it('reports an error if the custom header is not enumerated', function (done) {
-			requestHandler.and.returnValue(new underTest.ApiResponse({hi: 'there'}, {'content-length': '102'}));
-			underTest.router({ context: { path: '/success-no-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith('unexpected header content-length in GET /success-no-default');
-			}).then(done, done.fail);
-		});
-		it('ignores headers when they are specified with defaults in error templates', function (done) {
-			requestHandler.and.throwError('Abort');
-			underTest.router({ context: { path: '/error-default', method: 'GET' } }, lambdaContext).then(function () {
-				expect(lambdaContext.done).toHaveBeenCalledWith(new Error('Abort'));
-			}).then(done, done.fail);
 		});
 	});
 	describe('CORS handling', function () {
