@@ -55,6 +55,9 @@ describe('ApiBuilder', function () {
 		it('should include a `patch` method', function () {
 			expect(typeof underTest.patch).toEqual('function');
 		});
+		it('should include a `any` method', function () {
+			expect(typeof underTest.any).toEqual('function');
+		});
 	});
 	describe('configuration', function () {
 		it('carries version 3', function () {
@@ -168,7 +171,53 @@ describe('ApiBuilder', function () {
 				}).then(done, done.fail);
 			});
 		});
-
+	});
+	describe('routing to ANY', function () {
+		var proxyRequest, apiRequest, genericHandler, specificHandler;
+		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
+			describe('when using ' + method, function () {
+				beforeEach(function () {
+					proxyRequest = {
+						queryStringParameters : {
+							'a' : 'b'
+						},
+						requestContext: {
+							resourcePath: '/test1',
+							httpMethod: method
+						}
+					};
+					genericHandler = jasmine.createSpy('genericHandler');
+					specificHandler = jasmine.createSpy('specificHandler');
+					apiRequest = convertApiGWProxyRequest(proxyRequest, lambdaContext);
+					underTest.any('/test1', genericHandler);
+				});
+				it('routes to the generic handler if it is set up and no handler is defined for the actual method', function (done) {
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+						expect(genericHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+					}).then(done, done.fail);
+				});
+				it('routes to specific method handler over a generic handler', function (done) {
+					underTest[method.toLowerCase()]('/test1', specificHandler);
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+						expect(specificHandler).toHaveBeenCalledWith(apiRequest, lambdaContext);
+						expect(genericHandler).not.toHaveBeenCalled();
+					}).then(done, done.fail);
+				});
+				it('reports all methods as allowed for CORS if a generic handler is set', function (done) {
+					proxyRequest.requestContext.httpMethod = 'OPTIONS';
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+						expect(responseHeaders('Access-Control-Allow-Methods')).toEqual('DELETE,GET,HEAD,PATCH,POST,PUT,OPTIONS');
+					}).then(done, done.fail);
+				});
+				it('does not duplicate methods in CORS headers if both specific and generic handlers are set', function (done) {
+					underTest[method.toLowerCase()]('/test1', specificHandler);
+					proxyRequest.requestContext.httpMethod = 'OPTIONS';
+					underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+						expect(responseHeaders('Access-Control-Allow-Methods')).toEqual('DELETE,GET,HEAD,PATCH,POST,PUT,OPTIONS');
+					}).then(done, done.fail);
+				});
+			});
+		});
 	});
 	describe('call execution', function () {
 		var apiRequest, proxyRequest;

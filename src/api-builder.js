@@ -141,6 +141,9 @@ module.exports = function ApiBuilder(options) {
 			return result;
 		},
 		getCorsHeaders = function (request, methods) {
+			if (methods.indexOf('ANY') >= 0) {
+				methods = supportedMethods;
+			}
 			return Promise.resolve().then(function () {
 				if (customCorsHandler === false) {
 					return '';
@@ -162,7 +165,10 @@ module.exports = function ApiBuilder(options) {
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			handler = routes[routingInfo.path] && routes[routingInfo.path][routingInfo.method];
+			handler = routes[routingInfo.path] && (
+				routes[routingInfo.path][routingInfo.method] ||
+				routes[routingInfo.path].ANY
+			);
 			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {})).then(function (corsHeaders) {
 				if (routingInfo.method === 'OPTIONS') {
 					return {
@@ -214,7 +220,7 @@ module.exports = function ApiBuilder(options) {
 				});
 			}
 		};
-	supportedMethods.forEach(function (method) {
+	['ANY'].concat(supportedMethods).forEach(function (method) {
 		self[method.toLowerCase()] = function (route, handler, options) {
 			var pathPart = route.replace(/^\//, ''),
 				canonicalRoute = route;
