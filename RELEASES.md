@@ -1,6 +1,6 @@
 # Release history
 
-## 2.0.0, XX
+## 2.0.0, 27. September 2016 
 
 - support for API Gateway [Lambda Proxy Integrations](docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html)
 - support for routing via .ANY method
@@ -8,6 +8,8 @@
 - support for dynamic response codes
 - completed CORS support (all HTTP method request handlers can now also limit CORS allowed origins, instead of just the OPTIONS one)
 - support for asynchronous CORS origin filters
+- stopping support for Node 0.10
+- (will only work with claudia 2.x)
 
 ## 1.6.0, 26 August 2016
 
