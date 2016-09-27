@@ -1,5 +1,7 @@
 # API definition syntax
 
+> this is the API documentation for version 2.x. If you are looking for older (1.x) versions, check out [version 1.x API documentation](https://github.com/claudiajs/claudia-api-builder/blob/4f5c30df0365812765806ae2f9fd97e7a1287ed9/docs/api.md)
+
 An instance of the Claudia API Builder should be used as the module export from your API module. You can create a new API simply
 by instantiating a new `ApiBuilder`, then defining HTTP handlers for paths by calling `.get`, `.put`, and `.post`. For example, the following 
 snippet creates a single handler for a `GET` call to `/greet`, responding with a parameterised message:
@@ -22,32 +24,41 @@ For a more detailed example, see the [Web API Example project](https://github.co
 
 Claudia will automatically bundle all the parameters and pass it to your handler, so you do not have to define request and response models. The `request` object passed to your handler contains the following properties:
 
-  * `queryString`: a key-value map of query string arguments
-  * `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
-  * `headers`: a key-value map of all the HTTP headers posted by the client (header names have the same case as in the request)
-  * `normalizedHeaders`: _(since `claudia 1.6.0`)_ a key-value map of all the HTTP headers posted by the client (header names are lowercased for easier processing)
-  * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
-  * `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
-  * `rawBody`: _(since `claudia 1.6.0`, only when content type is `application/json`)_ the unparsed body of the request as a string
-  * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
-  * `lambdaContext`: (since `claudia-api-builder 1.3.0`) the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
-  * `context`: a key-value map of elements from the API Gateway context, see the [$context variable](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference) documentation for more info on individual fields 
-     * `method`: HTTP invocation method
-     * `path`: the active resource path (will include generic path components, eg /people/{name})
-     * `stage` : API Gateway stage 
-     * `sourceIp`: Source IP 
-     * `accountId`: identity account ID
-     * `user` : user identity from the context
-     * `userAgent` : user agent from the API Gateway context
-     * `userArn` : user ARN from the API Gateway context
-     * `caller` : caller identity
-     * `apiKey`: API key used for the call
-     * `authorizerPrincipalId`
-     * `cognitoAuthenticationProvider`
-     * `cognitoAuthenticationType` 
-     * `cognitoIdentityId`
-     * `cognitoIdentityPoolId`
+* `queryString`: a key-value map of query string arguments
+* `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
+* `headers`: a key-value map of all the HTTP headers posted by the client (header names have the same case as in the request)
+* `normalizedHeaders`:  a key-value map of all the HTTP headers posted by the client (header names are lowercased for easier processing)
+* `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
+* `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
+* `rawBody`: the unparsed body of the request as a string
+* `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
+* `lambdaContext`: the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
+* `context`: a key-value map of elements from the API Gateway context, see the [$context variable](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference) documentation for more info on individual fields 
+   * `method`: HTTP invocation method
+   * `path`: the active resource path (will include generic path components, eg /people/{name})
+   * `stage` : API Gateway stage 
+   * `sourceIp`: Source IP 
+   * `accountId`: identity account ID
+   * `user` : user identity from the context
+   * `userAgent` : user agent from the API Gateway context
+   * `userArn` : user ARN from the API Gateway context
+   * `caller` : caller identity
+   * `apiKey`: API key used for the call
+   * `authorizerPrincipalId`
+   * `cognitoAuthenticationProvider`
+   * `cognitoAuthenticationType` 
+   * `cognitoIdentityId`
+   * `cognitoIdentityPoolId`
 
+### Using the API Gateway Proxy Request Object 
+
+As an alternative to the Claudia API Builder request, you can also use the [API Gateway Proxy Request](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html#api-gateway-simple-proxy-for-lambda-input-format) object directly. To do that, pass the `AWS_PROXY` format to the constructor when instantiating an api builder.
+
+```javascript
+var ApiBuilder = require('claudia-api-builder'),
+	api = new ApiBuilder('AWS_PROXY');
+
+```
 
 ## Responding to requests
 
@@ -58,17 +69,21 @@ To implement a custom termination workflow, use the [`request.lambdaContext`](ht
 
 ### Customising response codes and content types
 
-By default, Claudia.js uses 500 as the HTTP response code for all errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. You can change all that by using the optional third argument to handler definition methods. All keys are optional, and the structure is:
+By default, Claudia.js uses 500 as the HTTP response code for all errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. You can change all that by using the optional third argument to handler definition methods, or by responding with an instance of an `ApiResponse` class. 
 
-  * `error`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
-    * `code`: HTTP response code
-    * `contentType`: the content type of the response
-    * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See [Custom headers](#custom-headers) below for more information
-  * `success`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
-    * `code`: HTTP response code
-    * `contentType`: the content type of the response
-    * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See [Custom headers](#custom-headers) below for more information
-  * `apiKeyRequired`: boolean, determines if a valid API key is required to call this method. See [Requiring Api Keys](#requiring-api-keys) below for more information
+#### Static configuration
+
+You can provide static configuration to a handler, by setting the third argument of the method. All the keys are optional, and the structure is:
+
+* `error`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
+  * `code`: HTTP response code
+  * `contentType`: the content type of the response
+  * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See [Custom headers](#custom-headers) below for more information
+* `success`: a number or a key-value map. If a number is specified, it will be used as the HTTP response code. If a key-value map is specified, it should have the following keys:
+  * `code`: HTTP response code
+  * `contentType`: the content type of the response
+  * `headers`: a key-value map of hard-coded header values, or an array enumerating custom header names. See [Custom headers](#custom-headers) below for more information
+* `apiKeyRequired`: boolean, determines if a valid API key is required to call this method. See [Requiring Api Keys](#requiring-api-keys) below for more information
 
 For example:
 
@@ -92,26 +107,46 @@ These special rules apply to content types and codes:
 
 To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html).
 
-### Custom headers
+#### Dynamic responses
 
-Claudia API Builder provides limited support for custom HTTP headers. AWS API Gateway requires all custom headers to be enumerated upfront, and you can use the `success.headers` and `error.headers` keys of your handler configuration for that. There are two options for enumerating headers:
+Reply with an instance of `api.ApiResponse` to dynamically set headers and the response code. 
 
-1. Hard-code header values in the configuration (useful for ending sessions in case of errors, redirecting to a well-known location after log-outs etc). To do this, list headers as key-value pairs. For example: 
+```javascript
+new ApiResponse(body, headers, httpCode)
+```
+
+* `body`: string &ndash; the body of the response
+* `header`: object &ndash; key-value map of header names to header values, all strings
+* `httpCode`: numeric response code. Defaults to 200 for successful responses and 500 for errors.
+
+Here's an example:
+
+```javascript
+api.get('/programmatic-headers', function () {
+  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'}, 204);
+});
+
+```
+
+#### Custom headers
+
+
+You can Hard-code header values in the configuration (useful for ending sessions in case of errors, redirecting to a well-known location after log-outs etc),  use the `success.headers` and `error.headers` keys. To do this, list headers as key-value pairs. For example: 
+
   ```javascript
   api.get('/hard-coded-headers', function () {
   	return 'OK';
   }, {success: {headers: {'X-Version': '101', 'Content-Type': 'text/plain'}}});
   ```
 
-2. Dynamically assign header values from your API code. To do this, evaluate header names as an array, then return an instance of `ApiResponse(contents, headers)` from your handler method. For example:
-  ```javascript
-  api.get('/programmatic-headers', function () {
-	  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'});
-  }, {success: {headers: ['X-Version', 'Content-Type']}});
+You can also dynamically assign header values from your API code. Return an instance of `ApiResponse(contents, headers, httpCode)` from your handler method. For example:
 
-  ```
+```javascript
+api.get('/programmatic-headers', function () {
+  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'});
+}, {success: {headers: ['X-Version', 'Content-Type']}});
 
-Due to the limitations with Lambda error processing, the `error.headers` key can only be hard-coded. Dynamic values for error handlers are not supported.
+```
 
 To see custom headers in action, see the [Custom Headers Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-headers/web.js).
 
@@ -133,7 +168,7 @@ To hard-code the CORS origin to a particular domain, call the `corsOrigin` funct
 api.corsOrigin('https://www.claudiajs.com')
 ```
 
-To dynamically choose an origin (for example to support different configurations for development and production use, or to allow multiple sub-domains to access your API), call pass a JavaScript function into `corsOrigin`. Your function will receive the request object (filled with stage variables and the requesting headers) and should return a string with the contents of the origin header. This has to be a synchronous function (promises are not supported).
+To dynamically choose an origin (for example to support different configurations for development and production use, or to allow multiple sub-domains to access your API), pass a JavaScript function into `corsOrigin`. Your function will receive the request object (filled with stage variables and the requesting headers) and should return a string with the contents of the origin header. This has to be a synchronous function (promises are not supported).
 
 ```javascript
 api.corsOrigin(function (request) {
@@ -268,15 +303,15 @@ You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/lates
 api.registerAuthorizer(name, options);
 ```
 
- * `name`: `string` &ndash; the name for this authorizer
- * `option`: `object` &ndash; a key-value map containing the following properties
-   * `lambdaName` &ndash; the name of a Lambda function for the authorizer. Mandatory unless `lambdaArn` is provided.
-   * `lambdaArn` &ndash; full ARN of a Lambda function for the authorizer. Useful to wire up authorizers in third-party AWS accounts. If used, don't specify `lambdaName` or `lambdaVersion`.
-   * `lambdaVersion` &ndash; _optional_. Additional qualifier for the Lambda authorizer execution. Can be a string version alias, a numerical version or `true`. if `true`, the API will pass the current stage name as the qualifier. This allows you to use different versions of the authorizer for different versions of the API, for example for testing and production. If not defined, the latest version of the Lambda authorizer will be used for all stages of the API.
-   * `headerName`: `string` &ndash; _optional_ the header name that contains the authentication token. If not specified, Claudia will use the `Authorization` header
-   * `validationExpression`: `string` &ndash; _optional_ a regular expression to validate authentication tokens
-   * `credentials`: `string` &ndash; _optional_ an IAM role ARN for the credentials used to invoke the authorizer
-   * `resultTtl`: `int` &ndash; _optional_ period (in seconds) API gateway is allowed to cache policies returned by the custom authorizer
+* `name`: `string` &ndash; the name for this authorizer
+* `option`: `object` &ndash; a key-value map containing the following properties
+ * `lambdaName` &ndash; the name of a Lambda function for the authorizer. Mandatory unless `lambdaArn` is provided.
+ * `lambdaArn` &ndash; full ARN of a Lambda function for the authorizer. Useful to wire up authorizers in third-party AWS accounts. If used, don't specify `lambdaName` or `lambdaVersion`.
+ * `lambdaVersion` &ndash; _optional_. Additional qualifier for the Lambda authorizer execution. Can be a string version alias, a numerical version or `true`. if `true`, the API will pass the current stage name as the qualifier. This allows you to use different versions of the authorizer for different versions of the API, for example for testing and production. If not defined, the latest version of the Lambda authorizer will be used for all stages of the API.
+ * `headerName`: `string` &ndash; _optional_ the header name that contains the authentication token. If not specified, Claudia will use the `Authorization` header
+ * `validationExpression`: `string` &ndash; _optional_ a regular expression to validate authentication tokens
+ * `credentials`: `string` &ndash; _optional_ an IAM role ARN for the credentials used to invoke the authorizer
+ * `resultTtl`: `int` &ndash; _optional_ period (in seconds) API gateway is allowed to cache policies returned by the custom authorizer
 
 
 Here are a few examples:
@@ -308,8 +343,6 @@ Check out the [Custom Authorizers Example](https://github.com/claudiajs/example-
 
 ## Intercepting requests
 
-_since 1.5.0_
-
 API builder allows you to intercept requests and filter or modify them before proceeding with the normal routing process. To do that, call the `intercept` method
 
 ```javascript
@@ -325,17 +358,4 @@ The following rules apply for intercepting requests:
 
 Check out the [Intercepting Requests Example](https://github.com/claudiajs/example-projects/tree/master/intercepting-requests) to see this in action.
 
-## Handling unsupported event types
-
-_since 1.4.0_
-
-API Builder expects the events to come in a particular format, when invoked via API Gateway. You can invoke the Lambda function built using API Builder directly, or set it up to receive events from other sources, by creating a handler for unsupported event types. The syntax is:
-
-```javascript
-api.unsupportedEvent(callback);
-```
-
-* `callback`: `function` &ndash; a [Lambda handler function](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-handler.html)
-
-Note that the callback function completely takes over the responsibility for ending the Lambda context in this case. API Builder does not provide any shortcuts for Promises or any other features apart from directly passing the event and the context to the unsupported event handler.
 
