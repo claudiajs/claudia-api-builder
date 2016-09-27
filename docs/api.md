@@ -20,6 +20,8 @@ api.get('/greet', function (request) {
 
 For a more detailed example, see the [Web API Example project](https://github.com/claudiajs/example-projects/tree/master/web-api).
 
+You can also create a generic handler for any method on a path, using `.any`. See the [Web API Generic Handlers Project](https://github.com/claudiajs/example-projects/tree/master/web-api-generic-handlers) for an example.
+
 ## The Request Object
 
 Claudia will automatically bundle all the parameters and pass it to your handler, so you do not have to define request and response models. The `request` object passed to your handler contains the following properties:
@@ -196,8 +198,6 @@ There are two common ways for passing configuration variables to your API:
 
 ### Configuring stage variables using post-deployment steps 
 
-_since 1.4.0_
-
 If your API depends on configuration in stage variables, you can automate the configuration process during deployment. Claudia will then enable users to configure the variable value either from the command line, or by prompting interactively during deployment. The syntax is:
 
 ```javascript
@@ -270,8 +270,6 @@ See [How to Use an API Key in API Gateway](http://docs.aws.amazon.com/apigateway
 
 ### Require Authorization
 
-_since claudia 1.4.5_
-
 APIs by default do not require user level authorization, to enable browsers to call them. API Gateway also allows you to set fine-grained permissions based on IAM policies. To do that, configure the request processor by adding an `authorizationType` field, with the value of `AWS_IAM` &ndash; here's an example:
 
 ```javascript
@@ -281,8 +279,6 @@ api.get('/hello', function (request) {...}, {authorizationType: 'AWS_IAM'} );
 See the [Permissions Documentation Page](http://docs.aws.amazon.com/apigateway/latest/developerguide/permissions.html) of the API Gateway developer guide for information on how to set up user policies for authorization.
 
 ### Overriding executing credentials
-
-_since claudia 1.5.0_ 
 
 By default, API Gateway requests will execute under the credentials of the user who created them. You can make the API execute under the credentials of a particular user/IAM role, or pass the caller credentials to the underlying Lambda function by setting the `invokeWithCredentials` flag. Set it to a IAM ARN to use a particular set of credentials, or to `true` to pass caller credentials. If you use this flag, the `authorizationType` is automatically set to `AWS_IAM`, so you don't need to specify it separately. 
 
@@ -294,8 +290,6 @@ api.get('/hello', function (request) {...}, {invokeWithCredentials: 'arn:aws:iam
 ```
 
 ### Using custom authorizers
-
-_since: claudia-api-builder 1.6.0, claudia 1.7.1_
 
 You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) with your API by registering the authorizer using `api.registerAuthorizer`, and then referencing the authorizer by name in the `customAuthorizer` flag of the request handler options. You can register the authorizer in several ways:
 
