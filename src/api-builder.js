@@ -23,6 +23,7 @@ module.exports = function ApiBuilder(options) {
 		customCorsHandler,
 		postDeploySteps = {},
 		customCorsHeaders,
+		allowCredentials,
 		unsupportedEventCallback,
 		authorizers,
 		v2DeprecationWarning = function (what) {
@@ -157,7 +158,7 @@ module.exports = function ApiBuilder(options) {
 					'Access-Control-Allow-Origin': corsOrigin,
 					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
 					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
-					'Access-Control-Allow-Credentials': 'true'
+					'Access-Control-Allow-Credentials': corsOrigin && (allowCredentials ? 'true' : 'false')
 				};
 			});
 		},
@@ -272,6 +273,9 @@ module.exports = function ApiBuilder(options) {
 		} else {
 			throw 'corsHeaders only accepts strings';
 		}
+	};
+	self.corsAllowCredentials = function (allow) {
+		allowCredentials = allow;
 	};
 	self.ApiResponse = function (responseBody, responseHeaders, code) {
 		this.response = responseBody;
