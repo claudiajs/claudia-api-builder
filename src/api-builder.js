@@ -204,8 +204,11 @@ module.exports = function ApiBuilder(options) {
 				return request.context || {};
 			}
 		},
+		isFromApiGw = function (event) {
+			return event && event.requestContext && event.requestContext.resourcePath && event.requestContext.httpMethod;
+		},
 		getRequest = function (event, context) {
-			if (requestFormat === 'AWS_PROXY' || requestFormat === 'DEPRECATED') {
+			if (requestFormat === 'AWS_PROXY' || requestFormat === 'DEPRECATED' || !isFromApiGw(event)) {
 				return event;
 			} else {
 				return convertApiGWProxyRequest(event, context);

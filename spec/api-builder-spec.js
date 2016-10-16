@@ -1189,6 +1189,21 @@ describe('ApiBuilder', function () {
 				underTest.post('/echo', postRequestHandler);
 				underTest.intercept(interceptSpy);
 			});
+			it('passes the converted proxy request to interceptor if the request comes from API gateway', function (done) {
+				interceptSpy.and.returnValue(false);
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+					expect(interceptSpy.calls.argsFor(0)[0]).toEqual(apiRequest);
+				}).then(done, done.fail);
+			});
+			it('passes the original request to interception if it does not come from API Gateway', function (done) {
+				var customObject = {
+					slackRequest: 'abc',
+					slackToken: 'def'
+				};
+				underTest.proxyRouter(customObject, lambdaContext).then(function () {
+					expect(interceptSpy.calls.argsFor(0)[0]).toEqual(customObject);
+				}).then(done, done.fail);
+			});
 			it('rejects if the intercept rejects', function (done) {
 				interceptSpy.and.returnValue(Promise.reject('BOOM'));
 				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
