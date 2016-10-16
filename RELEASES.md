@@ -1,5 +1,9 @@
 # Release history
 
+## 2.0.1, 16. October 2016
+
+- bugfix for intercepting non-web requests, where 2.0 introduced backwards incompatibility wrapping even non-API Gateway requests into proxyRequest. The behaviour is now compatible with 1.x, where non-web requests are sent to the intercepting function unmodified.
+
 ## 2.0.0, 27. September 2016 
 
 - support for API Gateway [Lambda Proxy Integrations](docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html)
