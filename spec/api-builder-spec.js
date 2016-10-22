@@ -1332,7 +1332,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
@@ -1346,7 +1347,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '',
 						'Access-Control-Allow-Headers': '',
-						'Access-Control-Allow-Methods': ''
+						'Access-Control-Allow-Methods': '',
+						'Access-Control-Allow-Credentials': ''
 					},
 					body: ''
 				});
@@ -1362,7 +1364,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
@@ -1379,7 +1382,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
@@ -1394,7 +1398,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': 'custom-origin-string',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
@@ -1420,7 +1425,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'X-Api-Request',
-						'Access-Control-Allow-Methods': 'GET,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
@@ -1435,7 +1441,8 @@ describe('ApiBuilder', function () {
 					headers: {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-						'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
+						'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true'
 					},
 					body: ''
 				});
