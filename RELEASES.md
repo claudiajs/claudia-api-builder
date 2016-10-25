@@ -1,5 +1,9 @@
 # Release history
 
+## 2.0.2, 25. October 2016
+
+- bugfix for setting the Access-Control-Allow-Credentials header, thanks to [StampStyle](https://github.com/StampStyle)
+
 ## 2.0.1, 16. October 2016
 
 - bugfix for intercepting non-web requests, where 2.0 introduced backwards incompatibility wrapping even non-API Gateway requests into proxyRequest. The behaviour is now compatible with 1.x, where non-web requests are sent to the intercepting function unmodified.
