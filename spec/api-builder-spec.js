@@ -1325,7 +1325,7 @@ describe('ApiBuilder', function () {
 			expect(underTest.apiConfig().corsHandlers).toBe(true);
 		});
 
-		it('routes OPTIONS to return the the default configuration if no parameters set', function (done) {
+		it('routes OPTIONS to return the default configuration if no parameters set', function (done) {
 			underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
 					statusCode: 200,
@@ -1333,7 +1333,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 						'Access-Control-Allow-Methods': 'GET,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1348,7 +1349,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': '',
 						'Access-Control-Allow-Headers': '',
 						'Access-Control-Allow-Methods': '',
-						'Access-Control-Allow-Credentials': ''
+						'Access-Control-Allow-Credentials': '',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1365,7 +1367,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 						'Access-Control-Allow-Methods': 'GET,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1383,7 +1386,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': 'custom-origin',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 						'Access-Control-Allow-Methods': 'GET,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1399,7 +1403,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': 'custom-origin-string',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 						'Access-Control-Allow-Methods': 'GET,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1426,7 +1431,8 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'X-Api-Request',
 						'Access-Control-Allow-Methods': 'GET,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
 					},
 					body: ''
 				});
@@ -1442,7 +1448,25 @@ describe('ApiBuilder', function () {
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 						'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-						'Access-Control-Allow-Credentials': 'true'
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 0
+					},
+					body: ''
+				});
+			}).then(done, done.fail);
+		});
+		it('routes OPTIONS to return the max-age set by corsMaxAge', function (done) {
+			underTest.corsOrigin('custom-origin-string');
+			underTest.corsMaxAge(60);
+			underTest.router(apiRequest, lambdaContext).then(function () {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					statusCode: 200,
+					headers: {
+						'Access-Control-Allow-Origin': 'custom-origin-string',
+						'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+						'Access-Control-Allow-Methods': 'GET,OPTIONS',
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': 60
 					},
 					body: ''
 				});
