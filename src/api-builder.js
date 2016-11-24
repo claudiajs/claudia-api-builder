@@ -30,8 +30,6 @@ module.exports = function ApiBuilder(options) {
 		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		interceptCallback,
-		cachingCallback,
-		checkCacheCallback,
 		prompter = (options && options.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
@@ -226,24 +224,6 @@ module.exports = function ApiBuilder(options) {
 				});
 			}
 		},
-		executeCaching = function (routingInfo, modifiedRequest, response) {
-			if (!cachingCallback) {
-				return Promise.resolve(routingInfo);
-			} else {
-				return Promise.resolve().then(function () {
-					return cachingCallback(routingInfo, modifiedRequest, response);
-				});
-			}
-		},
-		executeCheckCache = function (routingInfo, modifiedRequest) {
-			if (!cachingCallback) {
-				return Promise.resolve(routingInfo);
-			} else {
-				return Promise.resolve().then(function () {
-					return checkCacheCallback(routingInfo, modifiedRequest);
-				});
-			}
-		},
 		setUpHandler = function (method) {
 			self[method.toLowerCase()] = function (route, handler, options) {
 				var pathPart = route.replace(/^\//, ''),
@@ -308,12 +288,6 @@ module.exports = function ApiBuilder(options) {
 	self.intercept = function (callback) {
 		interceptCallback = callback;
 	};
-	self.caching = function (callback) {
-		cachingCallback = callback;
-	};
-	self.checkCache = function (callback) {
-		checkCacheCallback = callback;
-	};
 	self.proxyRouter = function (event, context, callback) {
 		var request = getRequest(event, context),
 			routingInfo,
@@ -327,16 +301,8 @@ module.exports = function ApiBuilder(options) {
 			} else {
 				routingInfo = getRequestRoutingInfo(modifiedRequest);
 				if (routingInfo && routingInfo.path && routingInfo.method) {
-					return executeCheckCache(routingInfo, modifiedRequest).then(function (cachedResult) {
-						if (cachedResult) {
-							context.done(null, cachedResult);
-						} else {
-							return routeEvent(routingInfo, modifiedRequest, context).then(function (result) {
-								return executeCaching(routingInfo, modifiedRequest, result).then(function () {
-									context.done(null, result);
-								});
-							});
-						}
+					return routeEvent(routingInfo, modifiedRequest, context, callback).then(function (result) {
+						context.done(null, result);
 					});
 				} else {
 					if (unsupportedEventCallback) {
