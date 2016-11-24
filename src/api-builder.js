@@ -23,6 +23,7 @@ module.exports = function ApiBuilder(options) {
 		customCorsHandler,
 		postDeploySteps = {},
 		customCorsHeaders,
+		customCorsMaxAge,
 		unsupportedEventCallback,
 		authorizers,
 		v2DeprecationWarning = function (what) {
@@ -158,7 +159,7 @@ module.exports = function ApiBuilder(options) {
 					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
 					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
 					'Access-Control-Allow-Credentials': corsOrigin && 'true',
-					'Access-Control-Max-Age': 60
+					'Access-Control-Max-Age': customCorsMaxAge || 0
 				};
 			});
 		},
@@ -275,6 +276,13 @@ module.exports = function ApiBuilder(options) {
 			customCorsHeaders = headers;
 		} else {
 			throw 'corsHeaders only accepts strings';
+		}
+	};
+	self.corsMaxAge = function (age) {
+		if (!isNaN(age)) {
+			customCorsMaxAge = age;
+		} else {
+			throw 'corsMaxAge only accepts strings';
 		}
 	};
 	self.ApiResponse = function (responseBody, responseHeaders, code) {
