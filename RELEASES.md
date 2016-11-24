@@ -1,5 +1,10 @@
 # Release history
 
+## 2.1.0, 24 November 2016
+
+- enable max-age to be specified on CORS headers (thanks to [Philipp Holly](https://github.com/phips28))
+- limit magic location header only to actual 3xx redirects (301 and 302), allowing other codes such as 304 to be handled differently, fixes [issue 20](https://github.com/claudiajs/claudia-api-builder/issues/20) 
+
 ## 2.0.2, 25. October 2016
 
 - bugfix for setting the Access-Control-Allow-Credentials header, thanks to [StampStyle](https://github.com/StampStyle)
