@@ -1,6 +1,6 @@
 {
   "name": "claudia-api-builder",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Simplify AWS ApiGateway handling",
   "license": "MIT",
   "repository": {
