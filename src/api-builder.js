@@ -42,7 +42,7 @@ module.exports = function ApiBuilder(options) {
 			return to;
 		},
 		isRedirect = function (code) {
-			return /3[0-9][0-9]/.test(code);
+			return /3[0-9][1-3]/.test(code);
 		},
 		getContentType = function (configuration, result) {
 			var staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),

@@ -651,6 +651,18 @@ describe('ApiBuilder', function () {
 							}).then(done, done.fail);
 						});
 					});
+					describe('when the result code is 3xx but not a redirect', function () {
+						it('does not modify the body or the headers', function (done) {
+							underTest.get('/echo', requestHandler, {
+								success: { code: 304 }
+							});
+							requestHandler.and.returnValue({hi: 'there'});
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(JSON.parse(responseBody())).toEqual({hi: 'there'});
+								expect(responseHeaders('Location')).toBeUndefined();
+							}).then(done, done.fail);
+						});
+					});
 				});
 				describe('error logging', function () {
 					it('logs stack from error objects', function (done) {
