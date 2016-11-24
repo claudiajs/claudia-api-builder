@@ -282,7 +282,7 @@ module.exports = function ApiBuilder(options) {
 		if (!isNaN(age)) {
 			customCorsMaxAge = age;
 		} else {
-			throw 'corsMaxAge only accepts strings';
+			throw 'corsMaxAge only accepts numbers';
 		}
 	};
 	self.ApiResponse = function (responseBody, responseHeaders, code) {
