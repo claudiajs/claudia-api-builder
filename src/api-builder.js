@@ -301,7 +301,11 @@ module.exports = function ApiBuilder(options) {
 		var request = getRequest(event, context),
 			routingInfo,
 			handleError = function (e) {
-				context.done(e);
+				if(isApiResponse(e)) { 
+					context.done(null, packResult(e, getRequestRoutingInfo(request), {}, 'error')); 
+				} else { 
+					context.done(e); 
+				}
 			};
 		context.callbackWaitsForEmptyEventLoop = false;
 		return executeInterceptor(request, context).then(function (modifiedRequest) {
