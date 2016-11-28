@@ -1232,6 +1232,16 @@ describe('ApiBuilder', function () {
 					expect(lambdaContext.done.calls.mostRecent().args[0].message).toEqual('BOOM');
 				}).then(done, done.fail);
 			});
+			it('passes if the intercept throws an ApiResponse exception', function (done) {
+				interceptSpy.and.returnValue(new underTest.ApiResponse('BODY',{}, 403));
+				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+					expect(requestHandler).not.toHaveBeenCalled();
+					expect(postRequestHandler).not.toHaveBeenCalled();
+					expect(responseStatusCode()).toEqual(403);
+					expect(responseBody()).toEqual('"BODY"');
+					expect(contentType()).toEqual('application/json');
+				}).then(done, done.fail);
+			});
 			it('routes the event returned from intercept', function (done) {
 				interceptSpy.and.returnValue({
 					context: {

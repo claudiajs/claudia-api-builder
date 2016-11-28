@@ -308,6 +308,9 @@ module.exports = function ApiBuilder(options) {
 			if (!modifiedRequest) {
 				return context.done(null, null);
 			} else {
+				if (isApiResponse(modifiedRequest)) {
+					return context.done(null, packResult(modifiedRequest, getRequestRoutingInfo(request), {}, 'success'));
+				}
 				routingInfo = getRequestRoutingInfo(modifiedRequest);
 				if (routingInfo && routingInfo.path && routingInfo.method) {
 					return routeEvent(routingInfo, modifiedRequest, context, callback).then(function (result) {
