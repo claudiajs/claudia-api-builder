@@ -253,6 +253,9 @@ module.exports = function ApiBuilder(options) {
 		if (customCorsHeaders) {
 			result.corsHeaders = customCorsHeaders;
 		}
+		if (customCorsMaxAge) {
+			result.corsMaxAge = customCorsMaxAge;
+		}
 		if (authorizers) {
 			result.authorizers = authorizers;
 		}
