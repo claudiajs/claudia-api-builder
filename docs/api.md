@@ -187,6 +187,15 @@ If your API endpoints use HTTP headers as parameters, you may need to allow addi
 api.corsHeaders('Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Api-Version');
 ```
 
+The browser performs a pre-flight OPTIONS call before each _real_ call (GET, POST, ...), this takes a lot of time, if the browser has to do it every time.
+And you get also charged for AWS API Gateway and Lambda! 
+To avoid this, you can define a `max-age` and the browser will cache the OPTIONS call for this duration.
+Default: disabled
+
+```javascript
+api.corsMaxAge(60); // in seconds 
+```
+
 To see this in action, see the [Custom CORS Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-cors/web.js). For more information on CORS, see the [MDN CORS page](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS).
 
 ## Configuring the API
@@ -383,6 +392,7 @@ api.intercept(function (event) { ... });
 
 The following rules apply for intercepting requests:
 
+* stop without executing the request, override response: return an `ApiResponse` object (with full CORS headers if needed)
 * stop without executing the request, but don't cause an error: return a falsy value, or a promise resolving to a falsy value
 * stop without executing the request, but with an error: throw an exception, or return a promise that rejects
 * execute the original request: return the original event, or a promise resolving with the original event

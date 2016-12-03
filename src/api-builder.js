@@ -23,6 +23,7 @@ module.exports = function ApiBuilder(options) {
 		customCorsHandler,
 		postDeploySteps = {},
 		customCorsHeaders,
+		customCorsMaxAge,
 		unsupportedEventCallback,
 		authorizers,
 		v2DeprecationWarning = function (what) {
@@ -41,7 +42,7 @@ module.exports = function ApiBuilder(options) {
 			return to;
 		},
 		isRedirect = function (code) {
-			return /3[0-9][0-9]/.test(code);
+			return /3[0-9][1-3]/.test(code);
 		},
 		getContentType = function (configuration, result) {
 			var staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
@@ -157,7 +158,8 @@ module.exports = function ApiBuilder(options) {
 					'Access-Control-Allow-Origin': corsOrigin,
 					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
 					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
-					'Access-Control-Allow-Credentials': corsOrigin && 'true'
+					'Access-Control-Allow-Credentials': corsOrigin && 'true',
+					'Access-Control-Max-Age': customCorsMaxAge || 0
 				};
 			});
 		},
@@ -276,6 +278,13 @@ module.exports = function ApiBuilder(options) {
 			throw 'corsHeaders only accepts strings';
 		}
 	};
+	self.corsMaxAge = function (age) {
+		if (!isNaN(age)) {
+			customCorsMaxAge = age;
+		} else {
+			throw 'corsMaxAge only accepts numbers';
+		}
+	};
 	self.ApiResponse = function (responseBody, responseHeaders, code) {
 		this.response = responseBody;
 		this.headers = responseHeaders;
@@ -298,6 +307,8 @@ module.exports = function ApiBuilder(options) {
 		return executeInterceptor(request, context).then(function (modifiedRequest) {
 			if (!modifiedRequest) {
 				return context.done(null, null);
+			} else if (isApiResponse(modifiedRequest)) {
+				return context.done(null, packResult(modifiedRequest, getRequestRoutingInfo(request), {}, 'success'));
 			} else {
 				routingInfo = getRequestRoutingInfo(modifiedRequest);
 				if (routingInfo && routingInfo.path && routingInfo.method) {
