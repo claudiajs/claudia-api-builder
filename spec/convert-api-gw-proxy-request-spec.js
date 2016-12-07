@@ -212,8 +212,28 @@ describe('extendApiGWProxyRequest', function () {
 				it('is a blank string if the original body was null', function () {
 					apiGWRequest.body = null;
 					expect(underTest(apiGWRequest).rawBody).toEqual('');
-
 				});
+			});
+		});
+	});
+	describe('rawBody contains object', function () {
+		describe('when content type is "application/json" and body is an object body', function () {
+			beforeEach(function () {
+				apiGWRequest.headers['Content-Type'] = 'application/json';
+				apiGWRequest.body = { a: 'b' };
+			});
+			it('contains the original copy of the body', function () {
+				expect(underTest(apiGWRequest).body).toEqual({ a: 'b' });
+			});
+			it('is a empty object {} if the original body was null', function () {
+				apiGWRequest.body = null;
+				expect(underTest(apiGWRequest).rawBody).toEqual('');
+				expect(underTest(apiGWRequest).body).toEqual({});
+			});
+			it('is a empty object {} if the original body was undefined', function () {
+				apiGWRequest.body = undefined;
+				expect(underTest(apiGWRequest).rawBody).toEqual('');
+				expect(underTest(apiGWRequest).body).toEqual({});
 			});
 		});
 	});
