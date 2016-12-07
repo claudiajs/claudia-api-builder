@@ -1,5 +1,13 @@
 # Release history
 
+## 2.3.0, 3 December 2016
+
+- expose CORS Max-Age in the config, so Claudia can set it even when default CORS settings are used on API Gateway
+
+## 2.2.0, 28 November 2016
+
+- Allow ApiResponse to be returned from an interceptor, so it can send back a custom error code
+
 ## 2.1.0, 24 November 2016
 
 - enable max-age to be specified on CORS headers (thanks to [Philipp Holly](https://github.com/phips28)) \

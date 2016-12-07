@@ -1346,6 +1346,10 @@ describe('ApiBuilder', function () {
 			underTest.corsOrigin('origin');
 			expect(underTest.apiConfig().corsHandlers).toBe(true);
 		});
+		it('sets corsMaxAge to 10', function () {
+			underTest.corsMaxAge(10);
+			expect(underTest.apiConfig().corsMaxAge).toBe(10);
+		});
 
 		it('routes OPTIONS to return the default configuration if no parameters set', function (done) {
 			underTest.router(apiRequest, lambdaContext).then(function () {
