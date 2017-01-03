@@ -26,7 +26,7 @@ describe('validHttpCode', function () {
 		expect(underTest({})).toBeFalsy();
 		expect(underTest([])).toBeFalsy();
 		expect(underTest({a: 1})).toBeFalsy();
-		expect(underTest([1,2,3])).toBeFalsy();
+		expect(underTest([1, 2, 3])).toBeFalsy();
 	});
 	it('returns false for non-numeric strings', function () {
 		expect(underTest('abc')).toBeFalsy();

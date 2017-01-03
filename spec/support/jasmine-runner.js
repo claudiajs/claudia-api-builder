@@ -1,7 +1,9 @@
 /*global jasmine, require, process*/
 var Jasmine = require('jasmine'),
 	SpecReporter = require('jasmine-spec-reporter'),
-	noop = function () {},
+	noop = function () {
+		'use strict';
+	},
 	jrunner = new Jasmine(),
 	filter;
 if (process.argv[2] === 'full') {

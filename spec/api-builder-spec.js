@@ -6,9 +6,6 @@ describe('ApiBuilder', function () {
 	'use strict';
 	var underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
 		postRequestHandler, prompter, logger,
-		contentType = function () {
-			return responseHeaders('Content-Type');
-		},
 		responseHeaders = function (headerName) {
 			var headers = lambdaContext.done.calls.argsFor(0)[1].headers;
 			if (headerName) {
@@ -16,6 +13,9 @@ describe('ApiBuilder', function () {
 			} else {
 				return headers;
 			}
+		},
+		contentType = function () {
+			return responseHeaders('Content-Type');
 		},
 		responseStatusCode = function () {
 			return lambdaContext.done.calls.argsFor(0)[1].statusCode;
@@ -73,7 +73,7 @@ describe('ApiBuilder', function () {
 			underTest.get('/echo', requestHandler);
 			underTest.post('/echo', postRequestHandler);
 			expect(underTest.apiConfig().routes).toEqual({
-				'echo': {'GET' : {}, 'POST': {}}
+				'echo': {'GET': {}, 'POST': {}}
 			});
 		});
 		it('can override existing route', function () {
@@ -125,8 +125,8 @@ describe('ApiBuilder', function () {
 		var proxyRequest, apiRequest;
 		beforeEach(function () {
 			proxyRequest = {
-				queryStringParameters : {
-					'a' : 'b'
+				queryStringParameters: {
+					'a': 'b'
 				},
 				requestContext: {
 					resourcePath: '/',
@@ -178,8 +178,8 @@ describe('ApiBuilder', function () {
 			describe('when using ' + method, function () {
 				beforeEach(function () {
 					proxyRequest = {
-						queryStringParameters : {
-							'a' : 'b'
+						queryStringParameters: {
+							'a': 'b'
 						},
 						requestContext: {
 							resourcePath: '/test1',
@@ -559,7 +559,7 @@ describe('ApiBuilder', function () {
 						});
 						it('overrides static headers with dynamic headers', function (done) {
 							underTest.get('/echo', requestHandler, {
-								error: { contentType: 'text/xml', headers : { 'Api-Type': '123'} }
+								error: { contentType: 'text/xml', headers: { 'Api-Type': '123'} }
 							});
 							requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'})));
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
@@ -1019,7 +1019,7 @@ describe('ApiBuilder', function () {
 						});
 						it('overrides static headers with dynamic headers', function (done) {
 							underTest.get('/echo', requestHandler, {
-								success: { contentType: 'text/xml', headers : { 'Api-Type': '123'} }
+								success: { contentType: 'text/xml', headers: { 'Api-Type': '123'} }
 							});
 							requestHandler.and.returnValue(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'}));
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
@@ -1233,7 +1233,7 @@ describe('ApiBuilder', function () {
 				}).then(done, done.fail);
 			});
 			it('passes if the intercept throws an ApiResponse exception', function (done) {
-				interceptSpy.and.returnValue(new underTest.ApiResponse('BODY',{}, 403));
+				interceptSpy.and.returnValue(new underTest.ApiResponse('BODY', {}, 403));
 				underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 					expect(requestHandler).not.toHaveBeenCalled();
 					expect(postRequestHandler).not.toHaveBeenCalled();
@@ -1500,13 +1500,11 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('post install hooks', function () {
-		var pResolve, pReject,
-			postPromise, hook;
+		var pResolve, postPromise, hook;
 
 		beforeEach(function () {
-			postPromise = new Promise(function (resolve, reject) {
+			postPromise = new Promise(function (resolve) {
 				pResolve = resolve;
-				pReject = reject;
 			});
 			hook = jasmine.createSpy().and.returnValue(postPromise);
 		});
@@ -1693,14 +1691,14 @@ describe('ApiBuilder', function () {
 	describe('lambda context control', function () {
 		it('sets the flag to kill the node vm without waiting for the event loop to empty after serializing context to request', function (done) {
 			var apiRequest = {
-					context: {
-						path: '/test',
-						method: 'GET'
-					},
-					queryString: {
-						a: 'b'
-					}
-				};
+				context: {
+					path: '/test',
+					method: 'GET'
+				},
+				queryString: {
+					a: 'b'
+				}
+			};
 			underTest.get('/test', requestHandler);
 			underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(lambdaContext.callbackWaitsForEmptyEventLoop).toBe(false);

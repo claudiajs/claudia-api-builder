@@ -5,51 +5,51 @@ describe('extendApiGWProxyRequest', function () {
 	var apiGWRequest;
 	beforeEach(function () {
 		apiGWRequest = {
-			'stageVariables' : {
-				'lambdaVersion' : 'latest'
+			'stageVariables': {
+				'lambdaVersion': 'latest'
 			},
-			'headers' : {
-				'Authorization' : 'abc-DeF',
-				'X-Forwarded-Port' : '443',
-				'Content-Type' : 'application/x-www-form-urlencoded',
-				'X-Forwarded-For' : '24.15.46.241, 54.239.167.121'
+			'headers': {
+				'Authorization': 'abc-DeF',
+				'X-Forwarded-Port': '443',
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-Forwarded-For': '24.15.46.241, 54.239.167.121'
 			},
-			'body' : 'birthyear=1905&press=%20OK%20',
-			'httpMethod' : 'POST',
-			'pathParameters' : {
-				'name' : 'sub1'
+			'body': 'birthyear=1905&press=%20OK%20',
+			'httpMethod': 'POST',
+			'pathParameters': {
+				'name': 'sub1'
 			},
-			'resource' : '/hello/{name}',
-			'path' : '/hello/sub1',
-			'queryStringParameters' : {
-				'a' : 'b',
-				'c' : 'd',
-				'code' : '403'
+			'resource': '/hello/{name}',
+			'path': '/hello/sub1',
+			'queryStringParameters': {
+				'a': 'b',
+				'c': 'd',
+				'code': '403'
 			},
-			'requestContext' : {
-				'resourceId' : 'rxcwwa',
-				'resourcePath' : '/hello/{name}',
-				'authorizer' : {
-					'principalId' : 'abc'
+			'requestContext': {
+				'resourceId': 'rxcwwa',
+				'resourcePath': '/hello/{name}',
+				'authorizer': {
+					'principalId': 'abc'
 				},
-				'httpMethod' : 'POST',
-				'identity' : {
-					'accountId' : 'acc-id',
-					'userAgent' : 'curl/7.43.0',
-					'apiKey' : 'api-key',
-					'cognitoIdentityId' : 'cognito-identity-id',
-					'user' : 'request-user',
-					'cognitoIdentityPoolId' : 'cognito-pool-id',
-					'cognitoAuthenticationProvider' : 'cognito-auth-provider',
-					'caller' : 'request-caller',
-					'userArn' : 'user-arn',
-					'sourceIp' : '24.15.46.241',
-					'cognitoAuthenticationType' : 'cognito-auth-type'
+				'httpMethod': 'POST',
+				'identity': {
+					'accountId': 'acc-id',
+					'userAgent': 'curl/7.43.0',
+					'apiKey': 'api-key',
+					'cognitoIdentityId': 'cognito-identity-id',
+					'user': 'request-user',
+					'cognitoIdentityPoolId': 'cognito-pool-id',
+					'cognitoAuthenticationProvider': 'cognito-auth-provider',
+					'caller': 'request-caller',
+					'userArn': 'user-arn',
+					'sourceIp': '24.15.46.241',
+					'cognitoAuthenticationType': 'cognito-auth-type'
 				},
-				'accountId' : '818931230230',
-				'apiId' : 'txdif4prz3',
-				'stage' : 'latest',
-				'requestId' : 'c1a20045-80ee-11e6-b878-a1b0067c1281'
+				'accountId': '818931230230',
+				'apiId': 'txdif4prz3',
+				'stage': 'latest',
+				'requestId': 'c1a20045-80ee-11e6-b878-a1b0067c1281'
 			}
 		};
 	});
@@ -66,7 +66,7 @@ describe('extendApiGWProxyRequest', function () {
 	describe('pathParams', function () {
 		it('copies pathParameters into pathParams', function () {
 			expect(underTest(apiGWRequest).pathParams).toEqual({
-				'name' : 'sub1'
+				'name': 'sub1'
 			});
 		});
 		it('uses empty object if the original path params are not defined', function () {
@@ -77,9 +77,9 @@ describe('extendApiGWProxyRequest', function () {
 	describe('queryString', function () {
 		it('copies queryStringParameters into queryString', function () {
 			expect(underTest(apiGWRequest).queryString).toEqual({
-				'a' : 'b',
-				'c' : 'd',
-				'code' : '403'
+				'a': 'b',
+				'c': 'd',
+				'code': '403'
 			});
 		});
 		it('uses empty object if the original query string is not defined', function () {
@@ -90,7 +90,7 @@ describe('extendApiGWProxyRequest', function () {
 	describe('env', function () {
 		it('copies stageVariables into env', function () {
 			expect(underTest(apiGWRequest).env).toEqual({
-				'lambdaVersion' : 'latest'
+				'lambdaVersion': 'latest'
 			});
 		});
 		it('uses empty object original stage variables are not defined', function () {
@@ -101,10 +101,10 @@ describe('extendApiGWProxyRequest', function () {
 	describe('headers', function () {
 		it('copies headers intact', function () {
 			expect(underTest(apiGWRequest).headers).toEqual({
-				'Authorization' : 'abc-DeF',
-				'X-Forwarded-Port' : '443',
-				'Content-Type' : 'application/x-www-form-urlencoded',
-				'X-Forwarded-For' : '24.15.46.241, 54.239.167.121'
+				'Authorization': 'abc-DeF',
+				'X-Forwarded-Port': '443',
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-Forwarded-For': '24.15.46.241, 54.239.167.121'
 			});
 		});
 		it('replaces headers with an empty object if not defined', function () {
@@ -115,10 +115,10 @@ describe('extendApiGWProxyRequest', function () {
 	describe('normalizedHeaders', function () {
 		it('creates a copy of headers with lowercase header names', function () {
 			expect(underTest(apiGWRequest).normalizedHeaders).toEqual({
-				'authorization' : 'abc-DeF',
-				'x-forwarded-port' : '443',
-				'content-type' : 'application/x-www-form-urlencoded',
-				'x-forwarded-for' : '24.15.46.241, 54.239.167.121'
+				'authorization': 'abc-DeF',
+				'x-forwarded-port': '443',
+				'content-type': 'application/x-www-form-urlencoded',
+				'x-forwarded-for': '24.15.46.241, 54.239.167.121'
 			});
 		});
 		it('uses empty object if headers are not defined', function () {

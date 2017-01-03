@@ -31,8 +31,8 @@ var qs = require('querystring'),
 			apiKey: identity.apiKey,
 			authorizerPrincipalId: requestContext.authorizer ? requestContext.authorizer.principalId : null,
 			cognitoAuthenticationProvider: identity.cognitoAuthenticationProvider,
-			cognitoAuthenticationType:  identity.cognitoAuthenticationType,
-			cognitoIdentityId:  identity.cognitoIdentityId,
+			cognitoAuthenticationType: identity.cognitoAuthenticationType,
+			cognitoIdentityId: identity.cognitoIdentityId,
 			cognitoIdentityPoolId: identity.cognitoIdentityPoolId
 		};
 

@@ -234,7 +234,7 @@ module.exports = function ApiBuilder(options) {
 					canonicalRoute = '/' + route;
 				}
 				if (!methodConfigurations[pathPart]) {
-					methodConfigurations[pathPart] = {} ;
+					methodConfigurations[pathPart] = {};
 				}
 				methodConfigurations[pathPart][method] = (options || {});
 				if (!routes[canonicalRoute]) {
