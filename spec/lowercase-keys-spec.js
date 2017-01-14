@@ -1,5 +1,5 @@
 /*global describe, it, expect, require */
-var lowercaseKeys = require('../src/lowercase-keys');
+const lowercaseKeys = require('../src/lowercase-keys');
 describe('lowercaseKeys', function () {
 	'use strict';
 	it('produces a blank object with literal values', function () {

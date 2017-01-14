@@ -1,5 +1,5 @@
 /*global describe, it, require, expect */
-var underTest = require('../src/valid-http-code');
+const underTest = require('../src/valid-http-code');
 describe('validHttpCode', function () {
 	'use strict';
 	it('returns true for integers 200-599', function () {

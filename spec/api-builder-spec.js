@@ -1,13 +1,13 @@
 /*global describe, it, expect, jasmine, require, beforeEach */
-var ApiBuilder = require('../src/api-builder'),
+const ApiBuilder = require('../src/api-builder'),
 	convertApiGWProxyRequest = require('../src/convert-api-gw-proxy-request'),
 	Promise = require('bluebird');
 describe('ApiBuilder', function () {
 	'use strict';
-	var underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
-		postRequestHandler, prompter, logger,
-		responseHeaders = function (headerName) {
-			var headers = lambdaContext.done.calls.argsFor(0)[1].headers;
+	let underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
+		postRequestHandler, prompter, logger;
+	const responseHeaders = function (headerName) {
+			const headers = lambdaContext.done.calls.argsFor(0)[1].headers;
 			if (headerName) {
 				return headers[headerName];
 			} else {
@@ -105,7 +105,7 @@ describe('ApiBuilder', function () {
 	describe('router', function () {
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
 			it('can route calls to a ' + method + '  method', function (done) {
-				var apiRequest = {
+				const apiRequest = {
 					context: {
 						path: '/test',
 						method: method
@@ -122,7 +122,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('proxyRouter', function () {
-		var proxyRequest, apiRequest;
+		let proxyRequest, apiRequest;
 		beforeEach(function () {
 			proxyRequest = {
 				queryStringParameters: {
@@ -173,7 +173,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('routing to ANY', function () {
-		var proxyRequest, apiRequest, genericHandler, specificHandler;
+		let proxyRequest, apiRequest, genericHandler, specificHandler;
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
 			describe('when using ' + method, function () {
 				beforeEach(function () {
@@ -220,7 +220,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('call execution', function () {
-		var apiRequest, proxyRequest;
+		let apiRequest, proxyRequest;
 		beforeEach(function () {
 			underTest.get('/echo', requestHandler);
 			proxyRequest = {
@@ -666,7 +666,7 @@ describe('ApiBuilder', function () {
 				});
 				describe('error logging', function () {
 					it('logs stack from error objects', function (done) {
-						var e = new Error('exploded!');
+						const e = new Error('exploded!');
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(logger).toHaveBeenCalledWith(e.stack);
 						}).then(done, done.fail);
@@ -681,7 +681,7 @@ describe('ApiBuilder', function () {
 						});
 					});
 					it('logs JSON stringify of an API response object', function (done) {
-						var apiResp = new underTest.ApiResponse('boom!', {'X-Api': 1}, 404);
+						const apiResp = new underTest.ApiResponse('boom!', {'X-Api': 1}, 404);
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(logger).toHaveBeenCalledWith(JSON.stringify(apiResp));
 						}).then(done, done.fail);
@@ -1194,7 +1194,7 @@ describe('ApiBuilder', function () {
 		});
 
 		describe('intercepting calls', function () {
-			var interceptSpy;
+			let interceptSpy;
 			beforeEach(function () {
 				interceptSpy = jasmine.createSpy();
 				underTest.get('/echo', requestHandler);
@@ -1208,7 +1208,7 @@ describe('ApiBuilder', function () {
 				}).then(done, done.fail);
 			});
 			it('passes the original request to interception if it does not come from API Gateway', function (done) {
-				var customObject = {
+				const customObject = {
 					slackRequest: 'abc',
 					slackToken: 'def'
 				};
@@ -1313,7 +1313,7 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 		});
 		it('calls custom handler if provided', function (done) {
-			var fakeCallback = jasmine.createSpy();
+			const fakeCallback = jasmine.createSpy();
 			underTest.unsupportedEvent(function (event, context, callback) {
 				expect(event).toEqual({a: 1});
 				expect(context).toEqual(lambdaContext);
@@ -1326,7 +1326,7 @@ describe('ApiBuilder', function () {
 	});
 
 	describe('CORS handling', function () {
-		var apiRequest;
+		let apiRequest;
 		beforeEach(function () {
 			apiRequest = { context: { path: '/existing', method: 'OPTIONS' } };
 			underTest.get('/existing', requestHandler);
@@ -1383,7 +1383,7 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 		});
 		it('routes OPTIONS to return the result of a custom CORS handler in the Allowed-Origins header', function (done) {
-			var corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin');
+			const corsHandler = jasmine.createSpy('corsHandler').and.returnValue('custom-origin');
 			underTest.corsOrigin(corsHandler);
 			underTest.router(apiRequest, lambdaContext).then(function () {
 				expect(corsHandler).toHaveBeenCalledWith(apiRequest);
@@ -1401,7 +1401,7 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 		});
 		it('routes OPTIONS to return the result of a promise resolved by the CORS handler', function (done) {
-			var corsPromise = Promise.resolve('custom-origin'),
+			const corsPromise = Promise.resolve('custom-origin'),
 				corsHandler = jasmine.createSpy('corsHandler').and.returnValue(corsPromise);
 			underTest.corsOrigin(corsHandler);
 			underTest.router(apiRequest, lambdaContext).then(function () {
@@ -1500,7 +1500,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('post install hooks', function () {
-		var pResolve, postPromise, hook;
+		let pResolve, postPromise, hook;
 
 		beforeEach(function () {
 			postPromise = new Promise(function (resolve) {
@@ -1538,7 +1538,7 @@ describe('ApiBuilder', function () {
 			}).toThrowError('Post deploy hook "first" already exists');
 		});
 		it('does not resolve until the post-install hook resolves', function (done) {
-			var hasResolved = jasmine.createSpy();
+			const hasResolved = jasmine.createSpy();
 			underTest.addPostDeployStep('first', hook);
 			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise}).then(hasResolved, done.fail);
 			Promise.resolve().then(function () {
@@ -1567,7 +1567,7 @@ describe('ApiBuilder', function () {
 			}).then(done, done.fail);
 		});
 		describe('multiple hooks', function () {
-			var p2Resolve, p2Reject,
+			let p2Resolve, p2Reject,
 				postPromise2, hook2;
 			beforeEach(function () {
 				postPromise2 = new Promise(function (resolve, reject) {
@@ -1615,7 +1615,7 @@ describe('ApiBuilder', function () {
 		});
 	});
 	describe('post-deploy config shortcut', function () {
-		var apiGatewayPromise, lambdaDetails, deploymentResolve, deploymentReject;
+		let apiGatewayPromise, lambdaDetails, deploymentResolve, deploymentReject;
 		beforeEach(function () {
 			apiGatewayPromise = jasmine.createSpyObj('apiGatewayPromise', ['createDeploymentPromise']);
 			apiGatewayPromise.createDeploymentPromise.and.returnValue(new Promise(function (resolve, reject) {
@@ -1690,7 +1690,7 @@ describe('ApiBuilder', function () {
 	});
 	describe('lambda context control', function () {
 		it('sets the flag to kill the node vm without waiting for the event loop to empty after serializing context to request', function (done) {
-			var apiRequest = {
+			const apiRequest = {
 				context: {
 					path: '/test',
 					method: 'GET'

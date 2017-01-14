@@ -1,11 +1,19 @@
 /*global module, require, Promise, console */
-var convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
+const convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
 	'use strict';
-	var self = this,
+	let customCorsHandler,
+		customCorsHeaders,
+		customCorsMaxAge,
+		unsupportedEventCallback,
+		authorizers,
+		interceptCallback,
+		requestFormat;
+
+	const self = this,
 		getRequestFormat = function (newFormat) {
-			var supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
+			const supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
 			if (!newFormat) {
 				return 'CLAUDIA_API_BUILDER';
 			} else {
@@ -16,21 +24,14 @@ module.exports = function ApiBuilder(options) {
 				}
 			}
 		},
-		requestFormat = getRequestFormat(options && options.requestFormat),
 		logger = (options && options.logger) || console.log,
 		methodConfigurations = {},
 		routes = {},
-		customCorsHandler,
 		postDeploySteps = {},
-		customCorsHeaders,
-		customCorsMaxAge,
-		unsupportedEventCallback,
-		authorizers,
 		v2DeprecationWarning = function (what) {
 			logger(what + ' are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
 		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
-		interceptCallback,
 		prompter = (options && options.prompter) || require('./ask'),
 		isApiResponse = function (obj) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
@@ -45,14 +46,14 @@ module.exports = function ApiBuilder(options) {
 			return /3[0-9][1-3]/.test(code);
 		},
 		getContentType = function (configuration, result) {
-			var staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
+			const staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
 				dynamicHeader = (result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers)['content-type']),
 				staticConfig = configuration && configuration.contentType;
 
 			return dynamicHeader || staticHeader || staticConfig || 'application/json';
 		},
 		getStatusCode = function (configuration, result, resultType) {
-			var defaultCode = {
+			const defaultCode = {
 					'success': 200,
 					'error': 500
 				},
@@ -61,7 +62,7 @@ module.exports = function ApiBuilder(options) {
 			return dynamicCode || staticCode || defaultCode[resultType];
 		},
 		getRedirectLocation = function (configuration, result) {
-			var dynamicHeader = result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers).location,
+			const dynamicHeader = result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers).location,
 				dynamicBody = isApiResponse(result) ? result.response : result,
 				staticHeader = configuration && configuration.headers && lowercaseKeys(configuration.headers).location;
 			return dynamicHeader || dynamicBody || staticHeader;
@@ -70,7 +71,7 @@ module.exports = function ApiBuilder(options) {
 			return (contentType && contentType.split(';')[0]) || 'application/json';
 		},
 		getSuccessBody = function (contentType, handlerResult) {
-			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
+			const contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
 			if (getCanonicalContentType(contentType) === 'application/json') {
 				if (contents === '' || contents ===	undefined) {
 					return '{}';
@@ -91,7 +92,7 @@ module.exports = function ApiBuilder(options) {
 			return object && (object.message !== undefined) && object.stack;
 		},
 		logError = function (err) {
-			var logInfo = err;
+			let logInfo = err;
 			if (isApiResponse(err)) {
 				logInfo = JSON.stringify(err);
 			} else if (isError(err)) {
@@ -100,7 +101,7 @@ module.exports = function ApiBuilder(options) {
 			logger(logInfo);
 		},
 		getErrorBody = function (contentType, handlerResult) {
-			var contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
+			let contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
 			if (isError(contents)) {
 				contents = contents.message;
 			}
@@ -114,7 +115,7 @@ module.exports = function ApiBuilder(options) {
 			return resultType === 'success' ? getSuccessBody(contentType, handlerResult) : getErrorBody(contentType, handlerResult);
 		},
 		packResult = function (handlerResult, routingInfo, corsHeaders, resultType) {
-			var path = routingInfo.path.replace(/^\//, ''),
+			const path = routingInfo.path.replace(/^\//, ''),
 				method = routingInfo.method,
 				configuration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method][resultType],
 				customHeaders = configuration && configuration.headers,
@@ -164,11 +165,10 @@ module.exports = function ApiBuilder(options) {
 			});
 		},
 		routeEvent = function (routingInfo, event, context) {
-			var handler;
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			handler = routes[routingInfo.path] && (
+			const handler = routes[routingInfo.path] && (
 				routes[routingInfo.path][routingInfo.method] ||
 				routes[routingInfo.path].ANY
 			);
@@ -228,8 +228,8 @@ module.exports = function ApiBuilder(options) {
 		},
 		setUpHandler = function (method) {
 			self[method.toLowerCase()] = function (route, handler, options) {
-				var pathPart = route.replace(/^\//, ''),
-					canonicalRoute = route;
+				const pathPart = route.replace(/^\//, '');
+				let canonicalRoute = route;
 				if (!/^\//.test(canonicalRoute)) {
 					canonicalRoute = '/' + route;
 				}
@@ -244,9 +244,8 @@ module.exports = function ApiBuilder(options) {
 			};
 		};
 
-	['ANY'].concat(supportedMethods).forEach(setUpHandler);
 	self.apiConfig = function () {
-		var result = {version: 3, routes: methodConfigurations};
+		const result = {version: 3, routes: methodConfigurations};
 		if (customCorsHandler !== undefined) {
 			result.corsHandlers = !!customCorsHandler;
 		}
@@ -301,11 +300,11 @@ module.exports = function ApiBuilder(options) {
 		interceptCallback = callback;
 	};
 	self.proxyRouter = function (event, context, callback) {
-		var request = getRequest(event, context),
-			routingInfo,
+		const request = getRequest(event, context),
 			handleError = function (e) {
 				context.done(e);
 			};
+		let routingInfo;
 		context.callbackWaitsForEmptyEventLoop = false;
 		return executeInterceptor(request, context).then(function (modifiedRequest) {
 			if (!modifiedRequest) {
@@ -349,8 +348,8 @@ module.exports = function ApiBuilder(options) {
 	};
 	self.addPostDeployConfig = function (stageVarName, prompt, configOption) {
 		self.addPostDeployStep(stageVarName, function (options, lambdaDetails, utils) {
-			var configureDeployment = function (varValue) {
-					var result = {
+			const configureDeployment = function (varValue) {
+					const result = {
 						restApiId: lambdaDetails.apiId,
 						stageName: lambdaDetails.alias,
 						variables: { }
@@ -378,7 +377,7 @@ module.exports = function ApiBuilder(options) {
 		});
 	};
 	self.postDeploy = function (options, lambdaDetails, utils) {
-		var steps = Object.keys(postDeploySteps),
+		const steps = Object.keys(postDeploySteps),
 			stepResults = {},
 			executeStepMapper = function (stepName) {
 				return utils.Promise.resolve().then(function () {
@@ -409,4 +408,8 @@ module.exports = function ApiBuilder(options) {
 		}
 		authorizers[name] = config;
 	};
+
+	requestFormat = getRequestFormat(options && options.requestFormat);
+	['ANY'].concat(supportedMethods).forEach(setUpHandler);
+
 };

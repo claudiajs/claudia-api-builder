@@ -1,9 +1,9 @@
 /*global module, require */
-var qs = require('querystring'),
+const qs = require('querystring'),
 	lowercaseKeys = require('./lowercase-keys'),
 	getCanonicalContentType = function (normalizedHeaders) {
 		'use strict';
-		var contentType = normalizedHeaders['content-type'] || '';
+		let contentType = normalizedHeaders['content-type'] || '';
 		if (contentType.indexOf(';') >= 0) {
 			contentType = contentType.split(';')[0];
 		}
@@ -17,7 +17,7 @@ var qs = require('querystring'),
 	},
 	convertContext = function (requestContext) {
 		'use strict';
-		var identity = requestContext.identity || {};
+		const identity = requestContext.identity || {};
 		return {
 			method: (requestContext.httpMethod || 'GET').toUpperCase(),
 			path: requestContext.resourcePath,
@@ -40,7 +40,7 @@ var qs = require('querystring'),
 
 module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 	'use strict';
-	var result = {
+	const result = {
 			v: 3,
 			rawBody: request.body || '',
 			normalizedHeaders: lowercaseKeys(request.headers),

@@ -1,7 +1,7 @@
 /*global module */
 module.exports = function lowercaseKeys(object) {
 	'use strict';
-	var result = {};
+	const result = {};
 	if (object && typeof object === 'object' && !Array.isArray(object)) {
 		Object.keys(object).forEach(function (key) {
 			result[key.toLowerCase()] = object[key];

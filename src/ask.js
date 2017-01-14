@@ -1,10 +1,10 @@
 /*global require, module, process */
-var readline = require('readline');
+const readline = require('readline');
 
 module.exports = function ask(question, PromiseImpl) {
 	'use strict';
 	return new PromiseImpl(function (resolve, reject) {
-		var rl = readline.createInterface({
+		const rl = readline.createInterface({
 			input: process.stdin,
 			output: process.stdout
 		});

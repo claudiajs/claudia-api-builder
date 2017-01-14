@@ -1,10 +1,10 @@
 /*global describe, it, expect, process, require, beforeEach, spyOn, jasmine */
-var Promise = require('bluebird'),
+const Promise = require('bluebird'),
 	readline = require('readline'),
 	ask = require('../src/ask');
 describe('ask', function () {
 	'use strict';
-	var fakeReadline;
+	let fakeReadline;
 	beforeEach(function () {
 		fakeReadline = jasmine.createSpyObj('readline', ['question', 'close']);
 		spyOn(readline, 'createInterface').and.returnValue(fakeReadline);

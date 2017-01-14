@@ -1,8 +1,8 @@
 /*global require, describe, it, expect, beforeEach */
-var underTest = require('../src/convert-api-gw-proxy-request');
+const underTest = require('../src/convert-api-gw-proxy-request');
 describe('extendApiGWProxyRequest', function () {
 	'use strict';
-	var apiGWRequest;
+	let apiGWRequest;
 	beforeEach(function () {
 		apiGWRequest = {
 			'stageVariables': {
@@ -59,7 +59,7 @@ describe('extendApiGWProxyRequest', function () {
 		});
 	});
 	it('does not modify the original request', function () {
-		var original = JSON.parse(JSON.stringify(apiGWRequest));
+		const original = JSON.parse(JSON.stringify(apiGWRequest));
 		underTest(apiGWRequest);
 		expect(apiGWRequest).toEqual(original);
 	});
