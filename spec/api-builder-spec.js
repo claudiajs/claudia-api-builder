@@ -20,6 +20,9 @@ describe('ApiBuilder', function () {
 		responseStatusCode = function () {
 			return lambdaContext.done.calls.argsFor(0)[1].statusCode;
 		},
+		responseBase64Flag = function () {
+			return lambdaContext.done.calls.argsFor(0)[1].isBase64Encoded;
+		},
 		responseBody = function () {
 			return lambdaContext.done.calls.argsFor(0)[1].body;
 		};
@@ -856,6 +859,29 @@ describe('ApiBuilder', function () {
 						requestHandler.and.returnValue(new underTest.ApiResponse('', {}));
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(responseStatusCode()).toEqual(200);
+						}).then(done, done.fail);
+					});
+				});
+				describe('isBase64Encoded', function () {
+					it('is not set if the responseContentHandling is not defined', done => {
+						underTest.get('/echo', requestHandler);
+						requestHandler.and.returnValue('hi there');
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseBase64Flag()).toBeUndefined();
+						}).then(done, done.fail);
+					});
+					it('is not set if the responseContentHandling is CONVERT_TO_TEXT', done => {
+						underTest.get('/echo', requestHandler, { responseContentHandling: 'CONVERT_TO_TEXT' });
+						requestHandler.and.returnValue('hi there');
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseBase64Flag()).toBeUndefined();
+						}).then(done, done.fail);
+					});
+					it('is set if the responseContentHandling is CONVERT_TO_BINARY', done => {
+						underTest.get('/echo', requestHandler, { responseContentHandling: 'CONVERT_TO_BINARY' });
+						requestHandler.and.returnValue('hi there');
+						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+							expect(responseBase64Flag()).toBe(true);
 						}).then(done, done.fail);
 					});
 				});
@@ -1745,6 +1771,21 @@ describe('ApiBuilder', function () {
 			expect(function () {
 				underTest.registerAuthorizer();
 			}).toThrowError('Authorizer must have a name');
+		});
+	});
+	describe('setBinaryMediaTypes', () => {
+		it('keeps default binaryMediaTypes undefined if not set', function () {
+			expect(underTest.apiConfig().binaryMediaTypes).toEqual(
+				['image/webp', 'image/*', 'image/jpg', 'image/jpeg', 'image/gif', 'image/png', 'application/octet-stream', 'application/pdf', 'application/zip']
+			);
+		});
+		it('removes binaryMediaTypes to if set to false', function () {
+			underTest.setBinaryMediaTypes(false);
+			expect(underTest.apiConfig().binaryMediaTypes).toBeUndefined();
+		});
+		it('sets binaryMediaTypes to a given array', function () {
+			underTest.setBinaryMediaTypes(['image/jpg']);
+			expect(underTest.apiConfig().binaryMediaTypes).toEqual(['image/jpg']);
 		});
 	});
 });

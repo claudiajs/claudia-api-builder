@@ -1,4 +1,3 @@
-/*global module, require, Promise, console */
 const convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
@@ -9,7 +8,8 @@ module.exports = function ApiBuilder(options) {
 		unsupportedEventCallback,
 		authorizers,
 		interceptCallback,
-		requestFormat;
+		requestFormat,
+		binaryMediaTypes;
 
 	const self = this,
 		getRequestFormat = function (newFormat) {
@@ -24,6 +24,17 @@ module.exports = function ApiBuilder(options) {
 				}
 			}
 		},
+		defaultBinaryMediaTypes = [
+			'image/webp',
+			'image/*',
+			'image/jpg',
+			'image/jpeg',
+			'image/gif',
+			'image/png',
+			'application/octet-stream',
+			'application/pdf',
+			'application/zip'
+		],
 		logger = (options && options.logger) || console.log,
 		methodConfigurations = {},
 		routes = {},
@@ -119,6 +130,7 @@ module.exports = function ApiBuilder(options) {
 				method = routingInfo.method,
 				configuration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method][resultType],
 				customHeaders = configuration && configuration.headers,
+				responseContentHandling = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].responseContentHandling,
 				contentType = getContentType(configuration, handlerResult),
 				statusCode = getStatusCode(configuration, handlerResult, resultType),
 				result = {
@@ -126,6 +138,9 @@ module.exports = function ApiBuilder(options) {
 					headers: { 'Content-Type': contentType },
 					body: getBody(contentType, handlerResult, resultType)
 				};
+			if (responseContentHandling === 'CONVERT_TO_BINARY' && resultType === 'success') {
+				result.isBase64Encoded = true;
+			}
 			mergeObjects(corsHeaders, result.headers);
 			if (customHeaders) {
 				if (Array.isArray(customHeaders)) {
@@ -257,6 +272,9 @@ module.exports = function ApiBuilder(options) {
 		}
 		if (authorizers) {
 			result.authorizers = authorizers;
+		}
+		if (binaryMediaTypes) {
+			result.binaryMediaTypes = binaryMediaTypes;
 		}
 		return result;
 	};
@@ -408,7 +426,10 @@ module.exports = function ApiBuilder(options) {
 		}
 		authorizers[name] = config;
 	};
-
+	self.setBinaryMediaTypes = function (types) {
+		binaryMediaTypes = types;
+	};
+	binaryMediaTypes = defaultBinaryMediaTypes;
 	requestFormat = getRequestFormat(options && options.requestFormat);
 	['ANY'].concat(supportedMethods).forEach(setUpHandler);
 
