@@ -92,6 +92,8 @@ module.exports = function ApiBuilder(options) {
 			} else {
 				if (!contents) {
 					return '';
+				} else if (Buffer.isBuffer(contents)) {
+					return contents.toString('base64');
 				} else if (typeof contents === 'object') {
 					return JSON.stringify(contents);
 				} else {

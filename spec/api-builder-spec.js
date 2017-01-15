@@ -1186,6 +1186,30 @@ describe('ApiBuilder', function () {
 								expect(responseBody()).toEqual('{"hi":"there"}');
 							}).then(done, done.fail);
 						});
+						it('base64 encodes buffers', done => {
+							requestHandler.and.returnValue(new Buffer([100, 200, 300]));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('ZMgs');
+							}).then(done, done.fail);
+						});
+						it('extracts content from ApiResponse objects', done => {
+							requestHandler.and.returnValue(new underTest.ApiResponse('content123', {}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('content123');
+							}).then(done, done.fail);
+						});
+						it('stringifies objects from ApiResponse objects', done => {
+							requestHandler.and.returnValue(new underTest.ApiResponse({'h1': 'content123'}, {}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('{"h1":"content123"}');
+							}).then(done, done.fail);
+						});
+						it('base64 encodes buffers from ApiResponse objects', done => {
+							requestHandler.and.returnValue(new underTest.ApiResponse(new Buffer([100, 200, 300]), {}));
+							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
+								expect(responseBody()).toEqual('ZMgs');
+							}).then(done, done.fail);
+						});
 						it('returns literal results for strings', function (done) {
 							requestHandler.and.returnValue('OK');
 							underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
