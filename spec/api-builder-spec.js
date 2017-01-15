@@ -863,22 +863,22 @@ describe('ApiBuilder', function () {
 					});
 				});
 				describe('isBase64Encoded', function () {
-					it('is not set if the responseContentHandling is not defined', done => {
+					it('is not set if the contentHandling is not defined', done => {
 						underTest.get('/echo', requestHandler);
 						requestHandler.and.returnValue('hi there');
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(responseBase64Flag()).toBeUndefined();
 						}).then(done, done.fail);
 					});
-					it('is not set if the responseContentHandling is CONVERT_TO_TEXT', done => {
-						underTest.get('/echo', requestHandler, { responseContentHandling: 'CONVERT_TO_TEXT' });
+					it('is not set if the contentHandling is CONVERT_TO_TEXT', done => {
+						underTest.get('/echo', requestHandler, { success: { contentHandling: 'CONVERT_TO_TEXT' }});
 						requestHandler.and.returnValue('hi there');
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(responseBase64Flag()).toBeUndefined();
 						}).then(done, done.fail);
 					});
 					it('is set if the responseContentHandling is CONVERT_TO_BINARY', done => {
-						underTest.get('/echo', requestHandler, { responseContentHandling: 'CONVERT_TO_BINARY' });
+						underTest.get('/echo', requestHandler, { success: {contentHandling: 'CONVERT_TO_BINARY' }});
 						requestHandler.and.returnValue('hi there');
 						underTest.proxyRouter(proxyRequest, lambdaContext).then(function () {
 							expect(responseBase64Flag()).toBe(true);

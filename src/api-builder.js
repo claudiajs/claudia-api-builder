@@ -132,7 +132,6 @@ module.exports = function ApiBuilder(options) {
 				method = routingInfo.method,
 				configuration = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method][resultType],
 				customHeaders = configuration && configuration.headers,
-				responseContentHandling = methodConfigurations[path] && methodConfigurations[path][method] && methodConfigurations[path][method].responseContentHandling,
 				contentType = getContentType(configuration, handlerResult),
 				statusCode = getStatusCode(configuration, handlerResult, resultType),
 				result = {
@@ -140,7 +139,7 @@ module.exports = function ApiBuilder(options) {
 					headers: { 'Content-Type': contentType },
 					body: getBody(contentType, handlerResult, resultType)
 				};
-			if (responseContentHandling === 'CONVERT_TO_BINARY' && resultType === 'success') {
+			if (configuration && configuration.contentHandling === 'CONVERT_TO_BINARY' && resultType === 'success') {
 				result.isBase64Encoded = true;
 			}
 			mergeObjects(corsHeaders, result.headers);
