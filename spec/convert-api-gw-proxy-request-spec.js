@@ -197,6 +197,42 @@ describe('extendApiGWProxyRequest', function () {
 				});
 			});
 		});
+		describe('when it is base64encoded', () => {
+			let encoded, decoded;
+			beforeEach(function () {
+				decoded = JSON.stringify({ a: 'b' });
+				encoded = new Buffer(decoded).toString('base64');
+				apiGWRequest.body = encoded;
+				apiGWRequest.isBase64Encoded = true;
+			});
+			it('decodes then parses application/json', () => {
+				apiGWRequest.headers['Content-Type'] = 'application/json';
+				expect(underTest(apiGWRequest).body).toEqual(JSON.parse(decoded));
+				expect(underTest(apiGWRequest).rawBody).toEqual(encoded);
+			});
+			['text/plain', 'application/xml', 'text/xml'].forEach(textContent => {
+				it('decodes ' + textContent + ' into utf8', function () {
+					apiGWRequest.headers['Content-Type'] = textContent;
+					expect(underTest(apiGWRequest).body).toEqual(decoded);
+					expect(underTest(apiGWRequest).rawBody).toEqual(encoded);
+				});
+			});
+			it('keeps other types as a binary buffer', () => {
+				apiGWRequest.headers['Content-Type'] = 'application/octet-stream';
+				expect(underTest(apiGWRequest).body).toEqual(new Buffer(decoded));
+				expect(underTest(apiGWRequest).rawBody).toEqual(encoded);
+			});
+			it('decodes application/x-www-form-urlencoded', () => {
+				apiGWRequest.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+				apiGWRequest.body = new Buffer('birthyear=1905&press=%20OK%20').toString('base64');
+
+				const result = underTest(apiGWRequest);
+
+				expect(result.body).toEqual('birthyear=1905&press=%20OK%20');
+				expect(result.rawBody).toEqual(apiGWRequest.body);
+				expect(result.post).toEqual({birthyear: '1905', press: ' OK '});
+			});
+		});
 
 	});
 	describe('rawBody', function () {

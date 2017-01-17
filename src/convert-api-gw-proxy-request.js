@@ -36,6 +36,20 @@ const qs = require('querystring'),
 			cognitoIdentityPoolId: identity.cognitoIdentityPoolId
 		};
 
+	},
+	getConvertedBody = function (body, contentType, isBase64Encoded) {
+		'use strict';
+		const textContentTypes = ['application/json', 'text/plain', 'application/xml', 'text/xml', 'application/x-www-form-urlencoded'];
+		if (!isBase64Encoded) {
+			return body;
+		} else {
+			const buffer = new Buffer(body, 'base64');
+			if (textContentTypes.indexOf(contentType) >= 0) {
+				return buffer.toString('utf8');
+			} else {
+				return buffer;
+			}
+		}
 	};
 
 module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
@@ -47,7 +61,8 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 			lambdaContext: lambdaContext,
 			proxyRequest: request
 		},
-		canonicalContentType = getCanonicalContentType(result.normalizedHeaders);
+		canonicalContentType = getCanonicalContentType(result.normalizedHeaders),
+		convertedBody = getConvertedBody(result.rawBody, canonicalContentType, request.isBase64Encoded);
 
 	copyProperties(request, result, {
 		queryString: 'queryStringParameters',
@@ -56,14 +71,14 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 		pathParams: 'pathParameters'
 	});
 	if (canonicalContentType === 'application/x-www-form-urlencoded') {
-		result.post = qs.parse(result.rawBody);
+		result.post = qs.parse(convertedBody);
 	}
 	if (canonicalContentType === 'application/json' &&
-		(typeof result.rawBody !== 'object' || !result.rawBody) // null will also result in type 'object'
+		(typeof convertedBody !== 'object' || !convertedBody) // null will also result in type 'object'
 	) {
-		result.body = JSON.parse(result.rawBody || '{}');
+		result.body = JSON.parse(convertedBody || '{}');
 	} else {
-		result.body = result.rawBody;
+		result.body = convertedBody;
 	}
 	result.context = request.requestContext ? convertContext(request.requestContext) : {};
 	return result;
