@@ -31,7 +31,7 @@ Claudia will automatically bundle all the parameters and pass it to your handler
 * `headers`: a key-value map of all the HTTP headers posted by the client (header names have the same case as in the request)
 * `normalizedHeaders`:  a key-value map of all the HTTP headers posted by the client (header names are lowercased for easier processing)
 * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
-* `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string 
+* `body`: in case of an `application/json`, the body of the request, parsed as a JSON object; in case of `application/xml` or `text/plain` POST or PUT, the body of the request as a string. In case of binary content, a `Buffer`.
 * `rawBody`: the unparsed body of the request as a string
 * `pathParams`: arguments from dynamic path parameter mappings (such as '/people/{name}')
 * `lambdaContext`: the [Lambda Context object](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) for the active request
@@ -381,6 +381,33 @@ api.get('/some/{path}/param', function () { },
     } 
   });
 ```
+### Binary content handling
+
+_since `claudia-api-builder 2.4.0`, `claudia 2.6.0`._
+
+API Gateway has basic support for binary data handling, by converting incoming binary data into base64 strings, and decoding outgoing base64 strings into binary content. Claudia API Builder allows you to configure and manage those transformations:
+
+* use `api.setBinaryMediaTypes(array)` to configure MIME types your API wants to treat as binary. By default, common image types, application/pdf and application/octet-stream are treated as binary. 
+* use `requestContentHandling` in the handler configuration to set the required incoming binary content handling behaviour (API Gateway Integration content handling). Valid values are `'CONVERT_TO_BINARY'` and `'CONVERT_TO_TEXT'`
+* use `success.contentHandling` in the handler configuration to set the required response content handling behaviour (API Gateway Integration Response content handling). Valid values are `'CONVERT_TO_BINARY'` and `'CONVERT_TO_TEXT'`. Remember to set the `success.contentType` to the appropriate binary content type as well. 
+
+```javascript
+api.setBinaryMediaTypes(['image/gif']); 
+
+api.post('/thumb', (request) => {
+  //...
+}, { 
+  requestContentHandling: 'CONVERT_TO_TEXT', 
+  success: { 
+    contentType: 'image/png', 
+    contentHandling: 'CONVERT_TO_BINARY' 
+  } 
+});
+```
+
+Claudia API Builder makes it easier to process binary content, by automatically encoding and decoding `Buffer` objects. Return a `Buffer` (eg the result of `fs.readFile`) from an endpoint handler, and Claudia will automatically convert it into a base64 string. If the incoming request is base64 encoded, Claudia API Builder will decode it for you, and set `request.body` to a `Buffer` with the decoded content.
+
+Check out the [Handling Binary Content Tutorial](https://claudiajs.com/tutorials/binary-content.html) and the [Binary Content Example Project](
 
 ## Intercepting requests
 

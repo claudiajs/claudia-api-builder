@@ -1,5 +1,9 @@
 # Release history
 
+## 2.4.0, 17 January 2016
+
+- support for API Gateway Binary content handling
+
 ## 2.3.0, 3 December 2016
 
 - expose CORS Max-Age in the config, so Claudia can set it even when default CORS settings are used on API Gateway
