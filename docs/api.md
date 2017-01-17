@@ -407,7 +407,7 @@ api.post('/thumb', (request) => {
 
 Claudia API Builder makes it easier to process binary content, by automatically encoding and decoding `Buffer` objects. Return a `Buffer` (eg the result of `fs.readFile`) from an endpoint handler, and Claudia will automatically convert it into a base64 string. If the incoming request is base64 encoded, Claudia API Builder will decode it for you, and set `request.body` to a `Buffer` with the decoded content.
 
-Check out the [Handling Binary Content Tutorial](https://claudiajs.com/tutorials/binary-content.html) and the [Binary Content Example Project](
+Check out the [Handling Binary Content Tutorial](https://claudiajs.com/tutorials/binary-content.html) and the [Binary Content Example Project](https://github.com/claudiajs/example-projects/tree/master/binary-content).
 
 ## Intercepting requests
 
