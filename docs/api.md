@@ -316,7 +316,6 @@ api.registerAuthorizer(name, options);
  * `credentials`: `string` &ndash; _optional_ an IAM role ARN for the credentials used to invoke the authorizer
  * `resultTtl`: `int` &ndash; _optional_ period (in seconds) API gateway is allowed to cache policies returned by the custom authorizer
 
-
 Here are a few examples:
 
 ```javascript
@@ -338,11 +337,35 @@ api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda', lambdaV
 api.registerAuthorizer('companyAuth', { lambdaArn: 'arn:aws:lambda:us-east-1:123456789012:function:MagicAuth', headerName: 'MagicAuth' })
 ``` 
 
+After you register the authorizer, turn in on by providing a `customAuthorizer` field in the endpoint configuration.
+
+```javascript
+api.get('/unlocked', function (request) {
+	return 'OK for ' + request.context.authorizerPrincipalId;
+}, { customAuthorizer: 'companyAuth' });
+```
+
 When the authorizer is specified using `lambdaName`, Claudia will automatically assign the correct access privileges so that your API can call the authorizer. When the authorizer is specified using `lambdaArn`, you need to ensure the right privileges exist between the API and the third-party authorizer Lambda function.
 
 Note that `request.context.authorizerPrincipalId` will contain the principal ID passed by the custom authorizer automatically.
 
 Check out the [Custom Authorizers Example](https://github.com/claudiajs/example-projects/tree/master/custom-authorizers) to see this in action.
+
+### Using Cognito authorisers
+
+_since claudia 2.9.0_
+
+You can also set up an API end-point to use a [Cognito Authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-integrate-with-cognito.html). Register the authorizer similar to custom authorizers, but specify `providerARNs` instead of a lambda name or lambda ARN, then provide `cognitoAuthorizer` in the endpoint options. You can use all the other options for custom authorizers (such as `validationExpression` and `headerName`).
+
+```javascript
+api.registerAuthorizer('MyCognitoAuth', {
+    providerARNs: ['<COGNITO POOL ARN>']
+});
+
+api.post('/lockedMessages', request => {
+  return doSomethingUseful(request);
+}, { cognitoAuthorizer: 'MyCognitoAuth' })
+```
 
 ### Controlling API Gateway caching parameters
 
