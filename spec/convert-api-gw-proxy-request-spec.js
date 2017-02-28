@@ -111,6 +111,11 @@ describe('extendApiGWProxyRequest', function () {
 			apiGWRequest.headers = null;
 			expect(underTest(apiGWRequest).headers).toEqual({});
 		});
+		it('doesnt exit when bad json is passed in and content type is json', function () {
+			apiGWRequest.headers = {'Content-Type': 'application/json'};
+			apiGWRequest.body = "{'weflwkjeflkjwle': ,,fw,e]";
+			expect(underTest(apiGWRequest).body).toEqual("{'weflwkjeflkjwle': ,,fw,e]");
+		});
 	});
 	describe('normalizedHeaders', function () {
 		it('creates a copy of headers with lowercase header names', function () {
@@ -183,12 +188,6 @@ describe('extendApiGWProxyRequest', function () {
 			it('works even if the client provides a charset with the content type header', function () {
 				apiGWRequest.headers['Content-Type'] = 'application/json';
 				expect(underTest(apiGWRequest).body).toEqual({ birthyear: '1905', press: ' OK ' });
-			});
-			it('throws an error if JSON cannot be parsed', function () {
-				apiGWRequest.body = '{ "a": "b"';
-				expect(function () {
-					underTest(apiGWRequest);
-				}).toThrowError();
 			});
 			['', null, undefined].forEach(function (body) {
 				it('is a blank object if body was [' + body + ']', function () {
