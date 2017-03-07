@@ -351,6 +351,15 @@ describe('extendApiGWProxyRequest', function () {
 				expect(underTest(apiGWRequest).context.authorizerPrincipalId).toEqual(null);
 			});
 		});
+		describe('authorizer', function () {
+			it('containst the authorizer information, if provided', function () {
+				expect(underTest(apiGWRequest).context.authorizer).toEqual({principalId: 'abc'});
+			});
+			it('is null if authorizer context is not present', function () {
+				apiGWRequest.requestContext.authorizer = null;
+				expect(underTest(apiGWRequest).context.authorizer).toEqual(null);
+			});
+		});
 		describe('cognitoAuthenticationProvider', function () {
 			it('containst the cognito authentication provider', function () {
 				expect(underTest(apiGWRequest).context.cognitoAuthenticationProvider).toEqual('cognito-auth-provider');

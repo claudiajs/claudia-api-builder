@@ -33,7 +33,8 @@ const qs = require('querystring'),
 			cognitoAuthenticationProvider: identity.cognitoAuthenticationProvider,
 			cognitoAuthenticationType: identity.cognitoAuthenticationType,
 			cognitoIdentityId: identity.cognitoIdentityId,
-			cognitoIdentityPoolId: identity.cognitoIdentityPoolId
+			cognitoIdentityPoolId: identity.cognitoIdentityPoolId,
+			authorizer: requestContext.authorizer
 		};
 
 	},
