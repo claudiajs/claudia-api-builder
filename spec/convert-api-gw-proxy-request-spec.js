@@ -242,7 +242,7 @@ describe('extendApiGWProxyRequest', () => {
 					apiGWRequest.headers['Content-Type'] = contentType;
 					apiGWRequest.body = '{"a": "b"}';
 				});
-				it('contains the original copy of the body', function ()  {
+				it('contains the original copy of the body', function () {
 					expect(underTest(apiGWRequest).rawBody).toEqual('{"a": "b"}');
 				});
 				it('is a blank string if the original body was null', () => {
