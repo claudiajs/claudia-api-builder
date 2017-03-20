@@ -1,21 +1,28 @@
 #Claudia API Builder
 
-This utility simplifies Node.js Lambda - API Gateway handling. 
-  * can process multiple AWS API Gateway calls from a single Lambda function in Node.js, so that  
-    you can develop and deploy an entire API simpler and avoid inconsistencies.
-  * can work with synchronous responses or promises, so you can develop easier
-  * any exceptions or promise rejections are automatically reported to Lambda as errors
-  * any synchronous responses or promise resolutions are automatically reported to Lambda as results
+[![npm](https://img.shields.io/npm/v/claudia-api-builder.svg?maxAge=2592000?style=plastic)](https://www.npmjs.com/package/claudia-api-builder)
+[![npm](https://img.shields.io/npm/dt/claudia-api-builder.svg?maxAge=2592000?style=plastic)](https://www.npmjs.com/package/claudia-api-builder)
+[![npm](https://img.shields.io/npm/l/claudia-api-builder.svg?maxAge=2592000?style=plastic)](https://github.com/claudiajs/claudia-api-builder/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/claudiajs/claudia-api-builder.svg?branch=master)](https://travis-ci.org/claudiajs/claudia-api-builder)
+[![Join the chat at https://gitter.im/claudiajs/claudia](https://badges.gitter.im/claudiajs/claudia.svg)](https://gitter.im/claudiajs/claudia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+Claudia API Builder makes it possible to use AWS API Gateway as if it were a lightweight JavaScript web server, so it helps developers get started easily and reduces the learning curve required to launch web APIs in AWS. [Check out this video to see how to create and deploy an API in under 5 minutes](https://vimeo.com/156232471).
+
+[![Claudia.js Introduction Video](https://claudiajs.com/assets/claudia-intro-video.png)](https://vimeo.com/156232471)
+
+The API Builder helps you by:
+
+* setting up AWS API Gateway Web interfaces for Lambda projects easily, the way JavaScript developers expect out of the box
+* routing multiple AWS API Gateway end-points to a single Lambda function, so that you can develop and deploy an entire API simpler and avoid inconsistencies.
+* handling synchronous responses or asynchronous promises, so you can develop easier
+* configuring response content types and HTTP codes easily
+* enabling you to set-up post-install configuration steps, so that you can set up the deployments easier
 
 The API builder is designed to work with [Claudia](https://github.com/claudiajs), and add minimal overhead to client projects. 
 
-## API definition syntax
+## Simple example
 
-An instance of the Claudia API Builder should be used as the module export from your API module. You can create a new API simply
-by instantiating a new `ApiBuilder`, then defining HTTP handlers for paths by calling `.get`, `.put`, and `.post`. For example, the following 
-snippet creates a single handler for a `GET` call to `/greet`, responding with a parameterised message:
-
-````
+```javascript
 var ApiBuilder = require('claudia-api-builder'),
 	api = new ApiBuilder(),
 	superb = require('superb');
@@ -23,25 +30,21 @@ var ApiBuilder = require('claudia-api-builder'),
 module.exports = api;
 
 api.get('/greet', function (request) {
-	'use strict';
 	return request.queryString.name + ' is ' + superb();
 });
-````
+```
 
-For a more detailed example, see the [Web API Example project](https://github.com/claudiajs/example-projects/tree/master/web-api).
+For a more examples, see the [Web API Example Projects](https://github.com/claudiajs/example-projects#web-api)
 
-### The Request Object
+## Getting started
 
-Claudia will automatically bundle all the parameters and pass it to your handler, so you do not have to define request and response models. The `request` object passed to your handler contains the following properties:
+* Check out the [Getting Started](https://claudiajs.com/tutorials/hello-world-api-gateway.html) guide for a basic Hello-World style example
+* Check out the [API Documentation](docs/api.md) for a detailed guide on handling requests, customising responses and configuring your API
 
-  * `queryString`: a key-value map of query string arguments
-  * `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
-  * `headers`: a key-value map of all the HTTP headers posted by the client
-  * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
-  * `body`: in case of an `application/json` POST or PUT, the body of the request, parsed as a JSON object
+## Questions, suggestions? 
+[![Join the chat at https://gitter.im/claudiajs/claudia](https://badges.gitter.im/claudiajs/claudia.svg)](https://gitter.im/claudiajs/claudia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Responding to requests
 
-You can either respond synchronously (just return a value, as above), or respond with a `Promise`. In that case, the lambda function will wait until the 
-`Promise` resolves or rejects before responding. Please note that AWS currently uses Node.js 0.10.36, which does not include the standard `Promise` library,
-so you need to include a third party one. API Builder just checks for the `.then` method, so it should work with any A+ Promise library.
+## License
+
+MIT

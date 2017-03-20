@@ -1,6 +1,6 @@
 {
   "name": "claudia-api-builder",
-  "version": "0.3.0",
+  "version": "2.4.1",
   "description": "Simplify AWS ApiGateway handling",
   "license": "MIT",
   "repository": {
@@ -9,12 +9,14 @@
   },
   "main": "index.js",
   "keywords": [
+    "claudia",
     "aws",
-    "microservices",
     "lambda",
-    "api",
+    "apigateway",
     "s3",
-    "claudia"
+    "api",
+    "microservices",
+    "serverless"
   ],
   "bugs": {
     "url": "https://github.com/claudiajs/claudia-api-builder/issues"
@@ -26,15 +28,17 @@
     "*.js"
   ],
   "scripts": {
-    "pretest": "jshint src spec && jscs src spec",
-    "test": "node spec/support/jasmine-runner.js"
+    "pretest": "eslint .",
+    "test": "node spec/support/jasmine-runner.js",
+    "debug": "node debug spec/support/jasmine-runner.js"
   },
   "author": "Gojko Adzic <gojko@gojko.com> http://gojko.net",
   "devDependencies": {
     "bluebird": "^3.3.0",
-    "jasmine": "^2.4.1",
-    "jasmine-spec-reporter": "^2.4.0",
-    "jscs": "^2.9.0",
-    "jshint": "^2.9.1"
+    "eslint": "^3.12.2",
+    "eslint-config-crockford": "^0.2.0",
+    "eslint-config-defaults": "^9.0.0",
+    "jasmine": "^2.5.2",
+    "jasmine-spec-reporter": "^2.7.0"
   }
 }
