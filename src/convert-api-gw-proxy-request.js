@@ -11,9 +11,7 @@ const qs = require('querystring'),
 	},
 	copyProperties = function (from, to, keyMappings) {
 		'use strict';
-		Object.keys(keyMappings).forEach(function (key) {
-			to[key] = from[keyMappings[key]] || {};
-		});
+		Object.keys(keyMappings).forEach(key => to[key] = from[keyMappings[key]] || {});
 	},
 	convertContext = function (requestContext) {
 		'use strict';
@@ -36,7 +34,6 @@ const qs = require('querystring'),
 			cognitoIdentityPoolId: identity.cognitoIdentityPoolId,
 			authorizer: requestContext.authorizer
 		};
-
 	},
 	getConvertedBody = function (body, contentType, isBase64Encoded) {
 		'use strict';

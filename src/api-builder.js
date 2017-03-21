@@ -20,7 +20,7 @@ module.exports = function ApiBuilder(options) {
 				if (supportedFormats.indexOf(newFormat) >= 0) {
 					return newFormat;
 				} else {
-					throw 'Unsupported request format ' + newFormat;
+					throw `Unsupported request format ${newFormat}`;
 				}
 			}
 		},
@@ -40,7 +40,7 @@ module.exports = function ApiBuilder(options) {
 		routes = {},
 		postDeploySteps = {},
 		v2DeprecationWarning = function (what) {
-			logger(what + ' are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html');
+			logger(`${what} are deprecated, and be removed in claudia api builder v3. Check https://claudiajs.com/tutorials/migrating_to_2.html`);
 		},
 		supportedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
 		prompter = (options && options.prompter) || require('./ask'),
@@ -48,10 +48,7 @@ module.exports = function ApiBuilder(options) {
 			return obj && (typeof obj === 'object') && (Object.getPrototypeOf(obj) === self.ApiResponse.prototype);
 		},
 		mergeObjects = function (from, to) {
-			Object.keys(from).forEach(function (key) {
-				to[key] = from[key];
-			});
-			return to;
+			return Object.assign(to, from);
 		},
 		isRedirect = function (code) {
 			return /3[0-9][1-3]/.test(code);
@@ -162,7 +159,7 @@ module.exports = function ApiBuilder(options) {
 			if (methods.indexOf('ANY') >= 0) {
 				methods = supportedMethods;
 			}
-			return Promise.resolve().then(function () {
+			return Promise.resolve().then(() => {
 				if (customCorsHandler === false) {
 					return '';
 				} else if (customCorsHandler) {
@@ -170,15 +167,16 @@ module.exports = function ApiBuilder(options) {
 				} else {
 					return '*';
 				}
-			}).then(function (corsOrigin) {
-				return {
-					'Access-Control-Allow-Origin': corsOrigin,
-					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
-					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
-					'Access-Control-Allow-Credentials': corsOrigin && 'true',
-					'Access-Control-Max-Age': customCorsMaxAge || 0
-				};
-			});
+			})
+				.then(corsOrigin => {
+					return {
+						'Access-Control-Allow-Origin': corsOrigin,
+						'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
+						'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
+						'Access-Control-Allow-Credentials': corsOrigin && 'true',
+						'Access-Control-Max-Age': customCorsMaxAge || 0
+					};
+				});
 		},
 		routeEvent = function (routingInfo, event, context) {
 			if (!routingInfo) {
@@ -188,26 +186,26 @@ module.exports = function ApiBuilder(options) {
 				routes[routingInfo.path][routingInfo.method] ||
 				routes[routingInfo.path].ANY
 			);
-			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {})).then(function (corsHeaders) {
-				if (routingInfo.method === 'OPTIONS') {
-					return {
-						statusCode: 200,
-						body: '',
-						headers: corsHeaders
-					};
-				} else if (handler) {
-					return Promise.resolve().then(function () {
-						return handler(event, context);
-					}).then(function (result) {
-						return packResult(result, routingInfo, corsHeaders, 'success');
-					}).catch(function (error) {
-						logError(error);
-						return packResult(error, routingInfo, corsHeaders, 'error');
-					});
-				} else {
-					return Promise.reject('no handler for ' + routingInfo.method + ' ' + routingInfo.path);
-				}
-			});
+			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {}))
+				.then(corsHeaders => {
+					if (routingInfo.method === 'OPTIONS') {
+						return {
+							statusCode: 200,
+							body: '',
+							headers: corsHeaders
+						};
+					} else if (handler) {
+						return Promise.resolve()
+							.then(() => handler(event, context))
+							.then(result => packResult(result, routingInfo, corsHeaders, 'success'))
+							.catch(error => {
+								logError(error);
+								return packResult(error, routingInfo, corsHeaders, 'error');
+							});
+					} else {
+						return Promise.reject(`no handler for ${routingInfo.method} ${routingInfo.path}`);
+					}
+				});
 
 		},
 		getRequestRoutingInfo = function (request) {
@@ -237,9 +235,8 @@ module.exports = function ApiBuilder(options) {
 			if (!interceptCallback) {
 				return Promise.resolve(request);
 			} else {
-				return Promise.resolve().then(function () {
-					return interceptCallback(request, context);
-				});
+				return Promise.resolve()
+					.then(() => interceptCallback(request, context));
 			}
 		},
 		setUpHandler = function (method) {
@@ -325,27 +322,26 @@ module.exports = function ApiBuilder(options) {
 			};
 		let routingInfo;
 		context.callbackWaitsForEmptyEventLoop = false;
-		return executeInterceptor(request, context).then(function (modifiedRequest) {
-			if (!modifiedRequest) {
-				return context.done(null, null);
-			} else if (isApiResponse(modifiedRequest)) {
-				return context.done(null, packResult(modifiedRequest, getRequestRoutingInfo(request), {}, 'success'));
-			} else {
-				routingInfo = getRequestRoutingInfo(modifiedRequest);
-				if (routingInfo && routingInfo.path && routingInfo.method) {
-					return routeEvent(routingInfo, modifiedRequest, context, callback).then(function (result) {
-						context.done(null, result);
-					});
+		return executeInterceptor(request, context)
+			.then(modifiedRequest => {
+				if (!modifiedRequest) {
+					return context.done(null, null);
+				} else if (isApiResponse(modifiedRequest)) {
+					return context.done(null, packResult(modifiedRequest, getRequestRoutingInfo(request), {}, 'success'));
 				} else {
-					if (unsupportedEventCallback) {
-						unsupportedEventCallback(event, context, callback);
+					routingInfo = getRequestRoutingInfo(modifiedRequest);
+					if (routingInfo && routingInfo.path && routingInfo.method) {
+						return routeEvent(routingInfo, modifiedRequest, context, callback)
+							.then(result => context.done(null, result));
 					} else {
-						return Promise.reject('event does not contain routing information');
+						if (unsupportedEventCallback) {
+							unsupportedEventCallback(event, context, callback);
+						} else {
+							return Promise.reject('event does not contain routing information');
+						}
 					}
 				}
-			}
-		}).catch(handleError);
-
+			}).catch(handleError);
 	};
 	self.router = function (event, context, callback) {
 		requestFormat = 'DEPRECATED';
@@ -361,12 +357,12 @@ module.exports = function ApiBuilder(options) {
 			throw new Error('addPostDeployStep requires a function as the first argument');
 		}
 		if (postDeploySteps[name]) {
-			throw new Error('Post deploy hook "' + name + '" already exists');
+			throw new Error(`Post deploy hook "${name}" already exists`);
 		}
 		postDeploySteps[name] = stepFunction;
 	};
 	self.addPostDeployConfig = function (stageVarName, prompt, configOption) {
-		self.addPostDeployStep(stageVarName, function (options, lambdaDetails, utils) {
+		self.addPostDeployStep(stageVarName, (options, lambdaDetails, utils) => {
 			const configureDeployment = function (varValue) {
 					const result = {
 						restApiId: lambdaDetails.apiId,
@@ -377,9 +373,8 @@ module.exports = function ApiBuilder(options) {
 					return result;
 				},
 				deployStageVar = function (deployment) {
-					return utils.apiGatewayPromise.createDeploymentPromise(deployment).then(function () {
-						return deployment.variables[stageVarName];
-					});
+					return utils.apiGatewayPromise.createDeploymentPromise(deployment)
+						.then(() => deployment.variables[stageVarName]);
 				},
 				getVariable = function () {
 					if (typeof options[configOption] === 'string') {
@@ -399,31 +394,28 @@ module.exports = function ApiBuilder(options) {
 		const steps = Object.keys(postDeploySteps),
 			stepResults = {},
 			executeStepMapper = function (stepName) {
-				return utils.Promise.resolve().then(function () {
-					return postDeploySteps[stepName](options, lambdaDetails, utils);
-				}).then(function (result) {
-					stepResults[stepName] = result;
-				});
+				return utils.Promise.resolve()
+					.then(() => postDeploySteps[stepName](options, lambdaDetails, utils))
+					.then(result => stepResults[stepName] = result);
 			};
 		if (!steps.length) {
 			return utils.Promise.resolve(false);
 		}
-		return utils.Promise.map(steps, executeStepMapper, {concurrency: 1}).then(function () {
-			return stepResults;
-		});
+		return utils.Promise.map(steps, executeStepMapper, {concurrency: 1})
+			.then(() => stepResults);
 	};
 	self.registerAuthorizer = function (name, config) {
 		if (!name || typeof name !== 'string' || name.length === 0) {
 			throw new Error('Authorizer must have a name');
 		}
 		if (!config || typeof config !== 'object' || Object.keys(config).length === 0) {
-			throw new Error('Authorizer ' + name + ' configuration is invalid');
+			throw new Error(`Authorizer ${name} configuration is invalid`);
 		}
 		if (!authorizers) {
 			authorizers = {};
 		}
 		if (authorizers[name]) {
-			throw new Error('Authorizer ' + name + ' is already defined');
+			throw new Error(`Authorizer ${name} is already defined`);
 		}
 		authorizers[name] = config;
 	};
@@ -433,5 +425,4 @@ module.exports = function ApiBuilder(options) {
 	binaryMediaTypes = defaultBinaryMediaTypes;
 	requestFormat = getRequestFormat(options && options.requestFormat);
 	['ANY'].concat(supportedMethods).forEach(setUpHandler);
-
 };
