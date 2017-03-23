@@ -69,7 +69,7 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 		pathParams: 'pathParameters'
 	});
 	if (canonicalContentType === 'application/x-www-form-urlencoded') {
-		result.post = qs.parse(convertedBody);
+		result.post = Object.assign({}, qs.parse(convertedBody));
 	}
 	if (canonicalContentType === 'application/json' &&
 		(typeof convertedBody !== 'object' || !convertedBody) // null will also result in type 'object'
