@@ -308,6 +308,7 @@ module.exports = function ApiBuilder(options) {
 		this.headers = responseHeaders;
 		this.code = code;
 	};
+	self.ApiErrors = require('claudia-api-errors');
 	self.unsupportedEvent = function (callback) {
 		v2DeprecationWarning('.unsupportedEvent handlers');
 		unsupportedEventCallback = callback;

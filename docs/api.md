@@ -451,3 +451,8 @@ The following rules apply for intercepting requests:
 Check out the [Intercepting Requests Example](https://github.com/claudiajs/example-projects/tree/master/intercepting-requests) to see this in action.
 
 
+## Custom response errors
+
+_since claudia 1.9.0_
+
+Check out the [API Errors Usage](https://github.com/phips28/claudia-api-errors#readme). 
