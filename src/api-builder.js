@@ -1,4 +1,5 @@
 const convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
+	stringify = require('json-stringify-safe'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
 	'use strict';
@@ -84,7 +85,7 @@ module.exports = function ApiBuilder(options) {
 				if (contents === '' || contents ===	undefined) {
 					return '{}';
 				} else {
-					return JSON.stringify(contents);
+					return stringify(contents);
 				}
 			} else {
 				if (!contents) {
@@ -92,7 +93,7 @@ module.exports = function ApiBuilder(options) {
 				} else if (Buffer.isBuffer(contents)) {
 					return contents.toString('base64');
 				} else if (typeof contents === 'object') {
-					return JSON.stringify(contents);
+					return stringify(contents);
 				} else {
 					return String(contents);
 				}
@@ -104,7 +105,7 @@ module.exports = function ApiBuilder(options) {
 		logError = function (err) {
 			let logInfo = err;
 			if (isApiResponse(err)) {
-				logInfo = JSON.stringify(err);
+				logInfo = stringify(err);
 			} else if (isError(err)) {
 				logInfo = err.stack;
 			}
@@ -116,7 +117,7 @@ module.exports = function ApiBuilder(options) {
 				contents = contents.message;
 			}
 			if (getCanonicalContentType(contentType) === 'application/json') {
-				return JSON.stringify({errorMessage: contents || '' });
+				return stringify({errorMessage: contents || '' });
 			} else {
 				return contents || '';
 			}

@@ -39,6 +39,7 @@
     "eslint-config-crockford": "^0.2.0",
     "eslint-config-defaults": "^9.0.0",
     "jasmine": "^2.5.2",
-    "jasmine-spec-reporter": "^2.7.0"
+    "jasmine-spec-reporter": "^2.7.0",
+    "json-stringify-safe": "^5.0.1"
   }
 }
