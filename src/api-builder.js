@@ -1,5 +1,5 @@
 const convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
-        stringify = require('json-stringify-safe'),
+	stringify = require('json-stringify-safe'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
 	'use strict';
