@@ -1,4 +1,5 @@
-const convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
+const util = require('util'),
+	convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
 	'use strict';
@@ -12,6 +13,9 @@ module.exports = function ApiBuilder(options) {
 		binaryMediaTypes;
 
 	const self = this,
+		safeStringify = function (object) {
+			return util.format('%j', object);
+		},
 		getRequestFormat = function (newFormat) {
 			const supportedFormats = ['AWS_PROXY', 'CLAUDIA_API_BUILDER'];
 			if (!newFormat) {
@@ -84,7 +88,11 @@ module.exports = function ApiBuilder(options) {
 				if (contents === '' || contents ===	undefined) {
 					return '{}';
 				} else {
-					return JSON.stringify(contents);
+					try {
+						return JSON.stringify(contents);
+					} catch (e) {
+						throw new Error('Response contains a circular reference and cannot be serialized to JSON');
+					}
 				}
 			} else {
 				if (!contents) {
@@ -92,7 +100,7 @@ module.exports = function ApiBuilder(options) {
 				} else if (Buffer.isBuffer(contents)) {
 					return contents.toString('base64');
 				} else if (typeof contents === 'object') {
-					return JSON.stringify(contents);
+					return safeStringify(contents);
 				} else {
 					return String(contents);
 				}
@@ -104,7 +112,7 @@ module.exports = function ApiBuilder(options) {
 		logError = function (err) {
 			let logInfo = err;
 			if (isApiResponse(err)) {
-				logInfo = JSON.stringify(err);
+				logInfo = safeStringify(err);
 			} else if (isError(err)) {
 				logInfo = err.stack;
 			}
@@ -114,6 +122,9 @@ module.exports = function ApiBuilder(options) {
 			let contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
 			if (isError(contents)) {
 				contents = contents.message;
+			}
+			if (contents && typeof (contents) !== 'string') {
+				contents = safeStringify(contents);
 			}
 			if (getCanonicalContentType(contentType) === 'application/json') {
 				return JSON.stringify({errorMessage: contents || '' });

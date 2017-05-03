@@ -725,6 +725,16 @@ describe('ApiBuilder', () => {
 						requestHandler.and.returnValue(Promise.reject(apiResp));
 
 					});
+					it('survives circular JSON when logging API response object', done => {
+						const apiResp = new underTest.ApiResponse('boom!', {'X-Api': 1}, 404);
+						apiResp.resp = apiResp;
+						underTest.proxyRouter(proxyRequest, lambdaContext)
+							.then(() => expect(logger).toHaveBeenCalledWith('[Circular]'))
+							.then(done, done.fail);
+						requestHandler.and.returnValue(Promise.reject(apiResp));
+
+					});
+
 				});
 				describe('result formatting', () => {
 					['application/json', 'application/json; charset=UTF-8'].forEach(respContentType => {
@@ -763,10 +773,21 @@ describe('ApiBuilder', () => {
 									.then(done, done.fail);
 								requestHandler.and.returnValue(Promise.reject('boom!'));
 							});
+							it('survives circular JSON', done => {
+								const circular = {name: 'explosion'};
+								circular.circular = circular;
+
+								underTest.proxyRouter(proxyRequest, lambdaContext)
+									.then(() => expect(responseBody()).toEqual('{"errorMessage":"[Circular]"}'))
+									.then(done, done.fail);
+								requestHandler.and.returnValue(Promise.reject(circular));
+							});
 							it('extracts content from ApiResponse objects', done => {
 								underTest.proxyRouter(proxyRequest, lambdaContext)
-									.then(() => expect(responseBody()).toEqual('{"errorMessage":"boom!"}'))
-									.then(done, done.fail);
+									.then(() => {
+										expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
+										expect(responseStatusCode()).toEqual(404);
+									}).then(done, done.fail);
 								requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('boom!', {'X-Api': 1}, 404)));
 							});
 							['', undefined, null, false].forEach(literal => {
@@ -1185,7 +1206,21 @@ describe('ApiBuilder', () => {
 							it('stringifies objects', done => {
 								requestHandler.and.returnValue({hi: 'there'});
 								underTest.proxyRouter(proxyRequest, lambdaContext)
-									.then(() => expect(responseBody()).toEqual('{"hi":"there"}'))
+									.then(() => {
+										expect(responseBody()).toEqual('{"hi":"there"}');
+										expect(responseStatusCode()).toEqual(200);
+									})
+									.then(done, done.fail);
+							});
+							it('survives circular results', done => {
+								const circular = {hi: 'there'};
+								circular.circular = circular;
+								requestHandler.and.returnValue(circular);
+								underTest.proxyRouter(proxyRequest, lambdaContext)
+									.then(() =>  {
+										expect(responseStatusCode()).toEqual(500);
+										expect(responseBody()).toEqual('{"errorMessage":"Response contains a circular reference and cannot be serialized to JSON"}');
+									})
 									.then(done, done.fail);
 							});
 							it('JSON-stringifies non objects', done => {
@@ -1222,6 +1257,17 @@ describe('ApiBuilder', () => {
 							requestHandler.and.returnValue({hi: 'there'});
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => expect(responseBody()).toEqual('{"hi":"there"}'))
+								.then(done, done.fail);
+						});
+						it('survives circular responses', done => {
+							const circular = {hi: 'there'};
+							circular.circular = circular;
+							requestHandler.and.returnValue(circular);
+							underTest.proxyRouter(proxyRequest, lambdaContext)
+								.then(() => {
+									expect(responseBody()).toEqual('[Circular]');
+									expect(responseStatusCode()).toEqual(200);
+								})
 								.then(done, done.fail);
 						});
 						it('base64 encodes buffers', done => {
