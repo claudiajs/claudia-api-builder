@@ -1,6 +1,6 @@
 # Release history
 
-## 2.4.1, 3 May 2017
+## 2.4.2, 3 May 2017
 
 - API builder will not explode, but provide a helpful error messahe when invalid or circular JSON structures passed as application/json requests or responses
 
