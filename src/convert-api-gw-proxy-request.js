@@ -74,7 +74,11 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 	if (canonicalContentType === 'application/json' &&
 		(typeof convertedBody !== 'object' || !convertedBody) // null will also result in type 'object'
 	) {
-		result.body = JSON.parse(convertedBody || '{}');
+		try {
+			result.body = JSON.parse(convertedBody || '{}');
+		} catch (e) {
+			throw new Error('The content does not match the supplied content type');
+		}
 	} else {
 		result.body = convertedBody;
 	}

@@ -316,12 +316,20 @@ module.exports = function ApiBuilder(options) {
 		interceptCallback = callback;
 	};
 	self.proxyRouter = function (event, context, callback) {
-		const request = getRequest(event, context),
-			handleError = function (e) {
-				context.done(e);
-			};
-		let routingInfo;
+		let routingInfo, request;
+		const handleError = function (e) {
+			context.done(e);
+		};
 		context.callbackWaitsForEmptyEventLoop = false;
+		try {
+			request = getRequest(event, context);
+		} catch (e) {
+			return Promise.resolve().then(() => context.done(null, {
+				statusCode: 500,
+				headers: { 'Content-Type': 'text/plain' },
+				body: (e && e.message) || 'Invalid request'
+			}));
+		}
 		return executeInterceptor(request, context)
 			.then(modifiedRequest => {
 				if (!modifiedRequest) {

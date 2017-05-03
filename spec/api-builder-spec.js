@@ -157,6 +157,20 @@ describe('ApiBuilder', () => {
 				})
 				.then(done, done.fail);
 		});
+		it('responds with invalid request if conversion fails', done => {
+			underTest = new ApiBuilder({requestFormat: 'CLAUDIA_API_BUILDER'});
+			underTest.get('/', requestHandler);
+			proxyRequest.headers = {
+				'Content-Type': 'application/json'
+			};
+			proxyRequest.body = 'birthyear=1905&press=%20OK%20';
+			underTest.proxyRouter(proxyRequest, lambdaContext)
+				.then(() => {
+					expect(responseStatusCode()).toEqual(500);
+					expect(responseBody()).toEqual('The content does not match the supplied content type');
+				})
+				.then(done, done.fail);
+		});
 		it('does not convert the request before routing if requestFormat = AWS_PROXY', done => {
 			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
 			underTest.get('/', requestHandler);

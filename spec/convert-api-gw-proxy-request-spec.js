@@ -188,7 +188,7 @@ describe('extendApiGWProxyRequest', () => {
 				apiGWRequest.body = '{ "a": "b"';
 				expect(() => {
 					underTest(apiGWRequest);
-				}).toThrowError();
+				}).toThrowError('The content does not match the supplied content type');
 			});
 			['', null, undefined].forEach(function (body) {
 				it(`is a blank object if body was [${body}]`, () => {
