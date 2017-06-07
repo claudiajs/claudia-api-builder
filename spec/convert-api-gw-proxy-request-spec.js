@@ -1,6 +1,6 @@
-/*global require, describe, it, expect, beforeEach */
+/*global require, describe, it, expect, beforeEach, afterEach */
 const underTest = require('../src/convert-api-gw-proxy-request');
-describe('extendApiGWProxyRequest', () => {
+describe('convertApiGWProxyRequest', () => {
 	'use strict';
 	let apiGWRequest;
 	beforeEach(() => {
@@ -386,28 +386,50 @@ describe('extendApiGWProxyRequest', () => {
 		});
 	});
 	describe('env variable handling', () => {
+		let oldPe;
 		beforeEach(() => {
-
 			apiGWRequest.stageVariables = {
-				var1: 'abc',
-				var3: 'xyz'
+				s: 'stage2',
+				sg: 'stage3',
+				sp: 'stage4',
+				sgp: 'stage1'
 			};
-			process.env.latest_var1 = 'val1';
-			process.env.latest_var2 = 'val2';
-			process.env.not_latest_var3 = 'val3';
-			process.env.not_latest_var4 = 'val4';
+			oldPe = process.env;
+			process.env = {
+				g: 'process1',
+				gp: 'process2',
+				sg: 'process3',
+				sgp: 'process4',
+				latest_gp: 'process5',
+				latest_sgp: 'process6',
+				latest_sp: 'process7',
+				latest_p: 'process8'
+			};
+		});
+		afterEach(() => {
+			process.env = oldPe;
 		});
 		it('does not change stage vars if mergeVars is false', () => {
 			expect(underTest(apiGWRequest).env).toEqual({
-				var1: 'abc',
-				var3: 'xyz'
+				s: 'stage2',
+				sg: 'stage3',
+				sp: 'stage4',
+				sgp: 'stage1'
 			});
 		});
 		it('merges process.env over stage vars if mergeVars is true', () => {
 			expect(underTest(apiGWRequest, {}, true).env).toEqual({
-				var1: 'val1',
-				var2: 'val2',
-				var3: 'xyz'
+				s: 'stage2',
+				sg: 'stage3',
+				sp: 'stage4',
+				sgp: 'stage1',
+				g: 'process1',
+				gp: 'process5',
+				latest_gp: 'process5',
+				latest_sgp: 'process6',
+				latest_sp: 'process7',
+				latest_p: 'process8',
+				p: 'process8'
 			});
 		});
 	});

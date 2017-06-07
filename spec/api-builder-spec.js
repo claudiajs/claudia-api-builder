@@ -1,4 +1,4 @@
-/*global describe, it, expect, jasmine, require, beforeEach */
+/*global describe, it, expect, jasmine, require, beforeEach, afterEach */
 const ApiBuilder = require('../src/api-builder'),
 	convertApiGWProxyRequest = require('../src/convert-api-gw-proxy-request'),
 	Promise = require('bluebird');
@@ -158,14 +158,22 @@ describe('ApiBuilder', () => {
 				.then(done, done.fail);
 		});
 		describe('variable merging', () => {
+			let oldPe;
 			beforeEach(() => {
 				proxyRequest.requestContext.stage = 'stg1';
 				proxyRequest.stageVariables = {
 					'from_stage': 'stg',
 					'in_both': 'stg'
 				};
-				process.env.stg1_from_process = 'pcs';
-				process.env.stg1_in_both = 'pcs';
+				oldPe = process.env;
+				process.env = {
+					stg1_from_process: 'pcs',
+					stg1_in_both: 'pcs',
+					global_process: 'pcs'
+				};
+			});
+			afterEach(() => {
+				process.env = oldPe;
 			});
 			it('merges variables if options.mergeVars is set', done => {
 				underTest = new ApiBuilder({mergeVars: true});
@@ -176,7 +184,10 @@ describe('ApiBuilder', () => {
 							env: {
 								'from_process': 'pcs',
 								'from_stage': 'stg',
-								'in_both': 'pcs'
+								'in_both': 'stg',
+								'global_process': 'pcs',
+								'stg1_from_process': 'pcs',
+								'stg1_in_both': 'pcs'
 							}
 						}), lambdaContext);
 					})

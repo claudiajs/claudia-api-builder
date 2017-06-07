@@ -70,7 +70,7 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext, merge
 		pathParams: 'pathParameters'
 	});
 	if (mergeEnvironmentVariables && request.requestContext && request.requestContext.stage) {
-		result.env = mergeVars(result.env, process.env, request.requestContext.stage + '_');
+		result.env = mergeVars(mergeVars(process.env, process.env, request.requestContext.stage + '_'), request.stageVariables);
 	}
 	if (canonicalContentType === 'application/x-www-form-urlencoded') {
 		result.post = Object.assign({}, qs.parse(convertedBody));

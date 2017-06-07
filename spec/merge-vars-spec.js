@@ -13,8 +13,10 @@ describe('mergeVars', function () {
 		expect(mergeVars(undefined, {'v3_a': 1}, 'v2_')).toEqual({});
 		expect(mergeVars({a: 1}, undefined, 'v2_')).toEqual({a: 1});
 		expect(mergeVars(undefined, undefined, 'v2_')).toEqual({});
-		expect(mergeVars({a: 1, b: 3}, {c: 'd'}, '')).toEqual({a: 1, b: 3});
-		expect(mergeVars({a: 1, b: 3}, {c: 'd'}, undefined)).toEqual({a: 1, b: 3});
+	});
+	it('copies all the vars if no prefix given', function () {
+		expect(mergeVars({a: 1, b: 3}, {c: 'd'}, '')).toEqual({a: 1, b: 3, c: 'd'});
+		expect(mergeVars({a: 1, b: 3}, {c: 'd'})).toEqual({a: 1, b: 3, c: 'd'});
 	});
 	it('does not modify its arguments', function () {
 		const from = {'v1_a': 1},
