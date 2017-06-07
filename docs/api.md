@@ -27,7 +27,7 @@ You can also create a generic handler for any method on a path, using `.any`. Se
 Claudia will automatically bundle all the parameters and pass it to your handler, so you do not have to define request and response models. The `request` object passed to your handler contains the following properties:
 
 * `queryString`: a key-value map of query string arguments
-* `env`: a key-value map of the API Gateway stage variables (useful for storing resource identifiers and access keys)
+* `env`: a key-value map of the API Gateway stage variables, optionally merged with Lambda environment variables (see [Environment Variables](#environment-variables))
 * `headers`: a key-value map of all the HTTP headers posted by the client (header names have the same case as in the request)
 * `normalizedHeaders`:  a key-value map of all the HTTP headers posted by the client (header names are lowercased for easier processing)
 * `post`: in case of a FORM post (`application/x-form-www-urlencoded`), a key-value map of the values posted
@@ -450,4 +450,52 @@ The following rules apply for intercepting requests:
 
 Check out the [Intercepting Requests Example](https://github.com/claudiajs/example-projects/tree/master/intercepting-requests) to see this in action.
 
+## Environment variables
+
+AWS Lambda and API Gateway have two methods of storing typical environment configuration:
+
+* Stage variables exist in the API gateway, separate for each stage (such as `dev` or `test`), and are added to each request as it passes through from a client to Lambda
+* Lambda environment variables exist in the Lambda process container, and they are configured for a numerical deployment (so if two labels such as `dev` and `prod` point to the same numerical deployment, they share the same environment variables).
+
+See the [Managing Lambda Versions](https://claudiajs.com/tutorials/versions.html) tutorial for an in-depth comparison of the two types of variables.
+
+When using Claudia API Builder, the `request.env` object contains by default only the stage variables, which are specific to the request. You can read the Lambda environment variables from `process.env`. To make it easier to use Lambda environment variables as well, you can use the `mergeVars` option (since `claudia-api-builder` 2.5.1) of the API Builder and get everything in `request.env`.
+
+```javascript
+api = new ApiBuilder({mergeVars: true});
+api.post('/upload', function (request) {
+  // request.env now contains both stage and process.env vars
+}
+```
+
+The following rules apply when merging:
+
+* If the same key exists both in Lambda environment variables and Stage variables, stage variable wins (so you can override global config with stage-specific values)
+* Any process.env variables that start with a prefix of the stage name with an underscore are copied into the key without that prefix, so you can easily keep different environment variables for testing and production and Api Builder will load the correct ones.
+
+For example, if you've set the following variables on Lambda: 
+
+```bash
+dev_DB_NAME=dev-db
+dev_LOG_LEVEL=INFO
+prod_DB_NAME=prod-db
+APP_NAME=Lovely App
+MESSAGE_PREFIX=LA_1
+```
+
+and the following variables in the `dev` stage:
+
+```bash
+LOG_LEVEL=debug
+APP_NAME=Lovely Debug
+```
+
+Without `{mergeVars:true}`, the handlers will get just LOG_LEVEL and APP_NAME in `request.env`, directly from stage variables. With `{mergeVars:true}`, the `request.env` object for the `dev` stage will look like this:
+
+```bash
+DB_NAME=dev-db # from process.env, because it had a dev_ prefix
+APP_NAME=Lovely Debug # stage var win over non-prefixed lambda vars
+LOG_LEVEL=debug # stage vars win over prefixed lambda env vars
+MESSAGE_PREFIX=LA_1 # env var, no prefixed version to override it
+```
 

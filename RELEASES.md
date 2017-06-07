@@ -1,5 +1,9 @@
 # Release history
 
+## 2.5.1, 7 June 2017
+
+- easier handling for Lambda environment and stage variables, using `{mergeVars: true}` 
+
 ## 2.4.2, 3 May 2017
 
 - API builder will not explode, but provide a helpful error messahe when invalid or circular JSON structures passed as application/json requests or responses
