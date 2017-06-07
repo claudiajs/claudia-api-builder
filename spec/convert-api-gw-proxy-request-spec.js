@@ -385,4 +385,30 @@ describe('extendApiGWProxyRequest', () => {
 			expect(underTest(apiGWRequest).context).toEqual({});
 		});
 	});
+	describe('env variable handling', () => {
+		beforeEach(() => {
+
+			apiGWRequest.stageVariables = {
+				var1: 'abc',
+				var3: 'xyz'
+			};
+			process.env.latest_var1 = 'val1';
+			process.env.latest_var2 = 'val2';
+			process.env.not_latest_var3 = 'val3';
+			process.env.not_latest_var4 = 'val4';
+		});
+		it('does not change stage vars if mergeVars is false', () => {
+			expect(underTest(apiGWRequest).env).toEqual({
+				var1: 'abc',
+				var3: 'xyz'
+			});
+		});
+		it('merges process.env over stage vars if mergeVars is true', () => {
+			expect(underTest(apiGWRequest, {}, true).env).toEqual({
+				var1: 'val1',
+				var2: 'val2',
+				var3: 'xyz'
+			});
+		});
+	});
 });

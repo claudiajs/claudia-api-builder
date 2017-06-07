@@ -157,6 +157,47 @@ describe('ApiBuilder', () => {
 				})
 				.then(done, done.fail);
 		});
+		describe('variable merging', () => {
+			beforeEach(() => {
+				proxyRequest.requestContext.stage = 'stg1';
+				proxyRequest.stageVariables = {
+					'from_stage': 'stg',
+					'in_both': 'stg'
+				};
+				process.env.stg1_from_process = 'pcs';
+				process.env.stg1_in_both = 'pcs';
+			});
+			it('merges variables if options.mergeVars is set', done => {
+				underTest = new ApiBuilder({mergeVars: true});
+				underTest.get('/', requestHandler);
+				underTest.proxyRouter(proxyRequest, lambdaContext)
+					.then(() => {
+						expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+							env: {
+								'from_process': 'pcs',
+								'from_stage': 'stg',
+								'in_both': 'pcs'
+							}
+						}), lambdaContext);
+					})
+					.then(done, done.fail);
+			});
+			it('does not merge variables if options.mergeVars is not set', done => {
+				underTest = new ApiBuilder();
+				underTest.get('/', requestHandler);
+				underTest.proxyRouter(proxyRequest, lambdaContext)
+					.then(() => {
+						expect(requestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+							env: {
+								'from_stage': 'stg',
+								'in_both': 'stg'
+							}
+						}), lambdaContext);
+					})
+					.then(done, done.fail);
+			});
+
+		});
 		it('responds with invalid request if conversion fails', done => {
 			underTest = new ApiBuilder({requestFormat: 'CLAUDIA_API_BUILDER'});
 			underTest.get('/', requestHandler);

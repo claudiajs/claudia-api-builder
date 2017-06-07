@@ -239,7 +239,7 @@ module.exports = function ApiBuilder(options) {
 			if (requestFormat === 'AWS_PROXY' || requestFormat === 'DEPRECATED' || !isFromApiGw(event)) {
 				return event;
 			} else {
-				return convertApiGWProxyRequest(event, context);
+				return convertApiGWProxyRequest(event, context, options && options.mergeVars);
 			}
 		},
 		executeInterceptor = function (request, context) {

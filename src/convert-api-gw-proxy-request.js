@@ -1,6 +1,7 @@
 /*global module, require */
 const qs = require('querystring'),
 	lowercaseKeys = require('./lowercase-keys'),
+	mergeVars = require('./merge-vars'),
 	getCanonicalContentType = function (normalizedHeaders) {
 		'use strict';
 		let contentType = normalizedHeaders['content-type'] || '';
@@ -50,7 +51,7 @@ const qs = require('querystring'),
 		}
 	};
 
-module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
+module.exports = function convertApiGWProxyRequest(request, lambdaContext, mergeEnvironmentVariables) {
 	'use strict';
 	const result = {
 			v: 3,
@@ -68,6 +69,9 @@ module.exports = function convertApiGWProxyRequest(request, lambdaContext) {
 		headers: 'headers',
 		pathParams: 'pathParameters'
 	});
+	if (mergeEnvironmentVariables && request.requestContext && request.requestContext.stage) {
+		result.env = mergeVars(result.env, process.env, request.requestContext.stage + '_');
+	}
 	if (canonicalContentType === 'application/x-www-form-urlencoded') {
 		result.post = Object.assign({}, qs.parse(convertedBody));
 	}
