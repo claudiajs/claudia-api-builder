@@ -47,4 +47,4 @@ For a more examples, see the [Web API Example Projects](https://github.com/claud
 
 ## License
 
-MIT
+[MIT](LICENSE)
