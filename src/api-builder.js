@@ -57,6 +57,12 @@ module.exports = function ApiBuilder(options) {
 		isRedirect = function (code) {
 			return /3[0-9][1-3]/.test(code);
 		},
+		pathToRegexp = function (pathName) {
+			const routeRegexStr = '^' + pathName
+					.replace(/([.+*?=^!:$()[\]|\/\\])/g, '\\$1')
+					.replace(/\{.+\}/g, '([^/?]+)') + '$';
+			return new RegExp(routeRegexStr, 'i');
+		},
 		getContentType = function (configuration, result) {
 			const staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
 				dynamicHeader = (result && isApiResponse(result) && result.headers && lowercaseKeys(result.headers)['content-type']),
@@ -81,6 +87,21 @@ module.exports = function ApiBuilder(options) {
 		},
 		getCanonicalContentType = function (contentType) {
 			return (contentType && contentType.split(';')[0]) || 'application/json';
+		},
+		getHandler = function (routingInfo) {
+			let routeHandler = routes[routingInfo.path] && (
+				routes[routingInfo.path][routingInfo.method] ||
+				routes[routingInfo.path].ANY
+			);
+			if (!routeHandler) {
+				Object.keys(routes).forEach(function (routePath) {
+					const routeRegex = pathToRegexp(routePath);
+					if (routeRegex.test(routingInfo.path)) {
+						routeHandler = routes[routePath][routingInfo.method];
+					}
+				});
+			}
+			return routeHandler;
 		},
 		getSuccessBody = function (contentType, handlerResult) {
 			const contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
@@ -193,10 +214,7 @@ module.exports = function ApiBuilder(options) {
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			const handler = routes[routingInfo.path] && (
-				routes[routingInfo.path][routingInfo.method] ||
-				routes[routingInfo.path].ANY
-			);
+			const handler = getHandler(routingInfo);
 			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {}))
 				.then(corsHeaders => {
 					if (routingInfo.method === 'OPTIONS') {
