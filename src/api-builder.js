@@ -58,10 +58,13 @@ module.exports = function ApiBuilder(options) {
 			return /3[0-9][1-3]/.test(code);
 		},
 		pathToRegexp = function (pathName) {
-			const routeRegexStr = '^' + pathName
-					.replace(/([.+*?=^!:$()[\]|\/\\])/g, '\\$1')
-					.replace(/\{.+\}/g, '([^/?]+)') + '$';
-			return new RegExp(routeRegexStr, 'i');
+			const routeRegexStr = '^' + pathName.replace(/([.+*?=^!:$()[\]|\/\\])/g, '\\$1') + '$',
+				routeParams = /\{([^}]+)\}/g.exec(routeRegexStr) || [],
+				formattedRouteRegexStr = routeRegexStr.replace(/\{.+\}/g, '([^/?]+)') + '$';
+			return {
+				regex: new RegExp(formattedRouteRegexStr, 'i'),
+				keys: routeParams.slice(1)
+			};
 		},
 		getContentType = function (configuration, result) {
 			const staticHeader = (configuration && configuration.headers && lowercaseKeys(configuration.headers)['content-type']),
@@ -88,16 +91,19 @@ module.exports = function ApiBuilder(options) {
 		getCanonicalContentType = function (contentType) {
 			return (contentType && contentType.split(';')[0]) || 'application/json';
 		},
-		getHandler = function (routingInfo) {
-			let routeHandler = routes[routingInfo.path] && (
-				routes[routingInfo.path][routingInfo.method] ||
-				routes[routingInfo.path].ANY
-			);
+		setupRouting = function (routingInfo, event) {
+			let routeHandler = routes[routingInfo.path] && (routes[routingInfo.path][routingInfo.method] || routes[routingInfo.path].ANY);
 			if (!routeHandler) {
 				Object.keys(routes).forEach(function (routePath) {
-					const routeRegex = pathToRegexp(routePath);
-					if (routeRegex.test(routingInfo.path)) {
+					const routeMeta = pathToRegexp(routePath),
+						routeRegex = routeMeta.regex,
+						routeKeys = routeMeta.keys,
+						routeParams = routeRegex.exec(routingInfo.path);
+					if (routeParams) {
 						routeHandler = routes[routePath][routingInfo.method];
+						routeKeys.forEach(function (routeKey, idx) {
+							event.pathParams[routeKey] = routeParams[idx + 1];
+						});
 					}
 				});
 			}
@@ -214,7 +220,7 @@ module.exports = function ApiBuilder(options) {
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			const handler = getHandler(routingInfo);
+			const handler = setupRouting(routingInfo, event);
 			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {}))
 				.then(corsHeaders => {
 					if (routingInfo.method === 'OPTIONS') {
