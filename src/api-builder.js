@@ -59,11 +59,12 @@ module.exports = function ApiBuilder(options) {
 		},
 		pathToRegexp = function (pathName) {
 			const routeRegexStr = '^' + pathName.replace(/([.+*?=^!:$()[\]|\/\\])/g, '\\$1') + '$',
-				routeParams = /\{([^}]+)\}/g.exec(routeRegexStr) || [],
-				formattedRouteRegexStr = routeRegexStr.replace(/\{.+\}/g, '([^/?]+)') + '$';
+				formattedRouteRegexStr = routeRegexStr.replace(/\{[^\}]+\}/g, '([^/?]+)'),
+				routeKeysRegexStr = pathName.replace(/\{([^\}]+)\}/g, '\{([^\}]+)\}'),
+				routeParams = new RegExp(routeKeysRegexStr, 'i').exec(pathName).slice(1);
 			return {
 				regex: new RegExp(formattedRouteRegexStr, 'i'),
-				keys: routeParams.slice(1)
+				keys: routeParams
 			};
 		},
 		getContentType = function (configuration, result) {
