@@ -336,6 +336,24 @@ describe('ApiBuilder', () => {
 					.then(() => expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext))
 					.then(done, done.fail);
 			});
+			it('can route calls with resourcePaths containing path params', done => {
+				const pathValues = ['a-path', 'another-path'],
+					pathParamProxyRequest = {
+						requestContext: {
+							resourcePath: `/path-params/${pathValues[0]}/some-path/${pathValues[1]}`,
+							httpMethod: 'GET'
+						}
+					};
+				underTest.get('/path-params/{somePathParam}/some-path/{anotherPathParam}', postRequestHandler);
+				underTest.proxyRouter(pathParamProxyRequest, lambdaContext)
+					.then(() => expect(postRequestHandler).toHaveBeenCalledWith(jasmine.objectContaining({
+						pathParams: {
+							somePathParam: pathValues[0],
+							anotherPathParam: pathValues[1]
+						}
+					}), lambdaContext))
+					.then(done, done.fail);
+			});
 			it('can route calls configured without a slash', done => {
 				underTest.post('echo', postRequestHandler);
 				proxyRequest.requestContext.httpMethod = apiRequest.context.method = 'POST';
