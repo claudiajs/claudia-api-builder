@@ -373,7 +373,7 @@ module.exports = function ApiBuilder(options) {
 			throw new Error('addPostDeployStep requires a step name as the first argument');
 		}
 		if (typeof stepFunction !== 'function') {
-			throw new Error('addPostDeployStep requires a function as the first argument');
+			throw new Error('addPostDeployStep requires a function as the second argument');
 		}
 		if (postDeploySteps[name]) {
 			throw new Error(`Post deploy hook "${name}" already exists`);
