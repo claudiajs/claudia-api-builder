@@ -1738,7 +1738,7 @@ describe('ApiBuilder', () => {
 		it('complains if the second argument is not a function', () => {
 			expect(() => {
 				underTest.addPostDeployStep('first');
-			}).toThrowError('addPostDeployStep requires a function as the first argument');
+			}).toThrowError('addPostDeployStep requires a function as the second argument');
 		});
 		it('does not execute the hook before postDeploy is called', () => {
 			underTest.addPostDeployStep('first', hook);
