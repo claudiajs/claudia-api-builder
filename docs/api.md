@@ -117,17 +117,32 @@ Reply with an instance of `api.ApiResponse` to dynamically set headers and the r
 new ApiResponse(body, headers, httpCode)
 ```
 
-* `body`: string &ndash; the body of the response
+* `body`: string/object &ndash; the body of the response
 * `header`: object &ndash; key-value map of header names to header values, all strings
 * `httpCode`: numeric response code. Defaults to 200 for successful responses and 500 for errors.
 
-Here's an example:
+Here are 2 examples:
 
 ```javascript
 api.get('/programmatic-headers', function () {
   return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'}, 204);
 });
 
+```
+
+Using async/await requires transpiling with babel
+```javascript
+api.post('/post-something', async (req) => {
+  try {
+    const result = await someAsyncTask()
+    if (!result) {
+      throw new Error('some err...')
+    }
+    return new api.ApiResponse(result, {'Content-Type': 'application/json'}, 200)
+  } catch (err) {
+    return new api.ApiResponse(err.message, {'Content-Type': 'text/plain'}, 400);
+  }
+});
 ```
 
 #### Custom headers
@@ -498,4 +513,3 @@ APP_NAME=Lovely Debug # stage var win over non-prefixed lambda vars
 LOG_LEVEL=debug # stage vars win over prefixed lambda env vars
 MESSAGE_PREFIX=LA_1 # env var, no prefixed version to override it
 ```
-
