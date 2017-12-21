@@ -27,6 +27,8 @@ You can also create a generic handler for any method on a path, using `.any`. Se
 
 ## Responding to requests
 
+Claudia API builder will try to automatically format the result according to the content type. If you use the 'application/json' content type, you can respond with a String or an Object, the response will be correctly encoded or serialised into JSON. 
+
 You can either respond synchronously (just return a value), or respond with a `Promise`. In that case, the lambda function will wait until the 
 `Promise` resolves or rejects before responding. API Builder just checks for the `.then` method, so it should work with any A+ Promise library. 
 
@@ -41,6 +43,8 @@ api.post('/set-user', function (request) {
 });
 
 ```
+
+
 
 To implement a custom termination workflow, use the [`request.lambdaContext`](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html) object, and return a `Promise` that never gets resolved.
 
