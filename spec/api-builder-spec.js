@@ -1,7 +1,6 @@
 /*global describe, it, expect, jasmine, require, beforeEach, afterEach */
 const ApiBuilder = require('../src/api-builder'),
-	convertApiGWProxyRequest = require('../src/convert-api-gw-proxy-request'),
-	Promise = require('bluebird');
+	convertApiGWProxyRequest = require('../src/convert-api-gw-proxy-request');
 describe('ApiBuilder', () => {
 	'use strict';
 	let underTest, requestHandler, lambdaContext, requestPromise, requestResolve, requestReject,
@@ -63,8 +62,8 @@ describe('ApiBuilder', () => {
 		});
 	});
 	describe('configuration', () => {
-		it('carries version 3', () => {
-			expect(underTest.apiConfig().version).toEqual(3);
+		it('carries version 4', () => {
+			expect(underTest.apiConfig().version).toEqual(4);
 		});
 		it('can configure a single GET method', () => {
 			underTest.get('/echo', requestHandler);
@@ -385,15 +384,14 @@ describe('ApiBuilder', () => {
 			});
 			describe('asynchronous', () => {
 				it('waits for promises to resolve or reject before responding', done => {
-					requestHandler.and.returnValue(requestPromise);
+					requestHandler.and.callFake(() => {
+						expect(requestHandler).toHaveBeenCalled();
+						expect(lambdaContext.done).not.toHaveBeenCalled();
+						done();
+						return new Promise(() => false);
+					});
 					underTest.proxyRouter(proxyRequest, lambdaContext)
 						.then(done.fail, done.fail);
-					Promise.resolve()
-						.then(() => {
-							expect(requestHandler).toHaveBeenCalled();
-							expect(lambdaContext.done).not.toHaveBeenCalled();
-							done();
-						});
 				});
 
 				it('synchronously handles plain objects that have a then key, but are not promises', done => {
@@ -1725,10 +1723,10 @@ describe('ApiBuilder', () => {
 			underTest.addPostDeployStep('first', (opts, config, utils) => {
 				expect(opts).toEqual({a: 1});
 				expect(config).toEqual({c: 2});
-				expect(utils).toEqual({Promise: Promise});
+				expect(utils).toEqual({});
 				done();
 			});
-			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise});
+			underTest.postDeploy({a: 1}, {c: 2}, {});
 		});
 		it('complains if the first argument is not a step name', () => {
 			expect(() => {
@@ -1753,7 +1751,7 @@ describe('ApiBuilder', () => {
 		it('does not resolve until the post-install hook resolves', done => {
 			const hasResolved = jasmine.createSpy();
 			underTest.addPostDeployStep('first', hook);
-			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+			underTest.postDeploy({a: 1}, {c: 2}, {})
 				.then(hasResolved, done.fail);
 			Promise.resolve()
 				.then(() => expect(hasResolved).not.toHaveBeenCalled())
@@ -1761,7 +1759,7 @@ describe('ApiBuilder', () => {
 		});
 		it('resolves when the post-install resolves', done => {
 			underTest.addPostDeployStep('first', hook);
-			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+			underTest.postDeploy({a: 1}, {c: 2}, {})
 				.then(result => expect(result).toEqual({first: { url: 'http://www.google.com' }}))
 				.then(done, done.fail);
 			pResolve({url: 'http://www.google.com'});
@@ -1770,13 +1768,13 @@ describe('ApiBuilder', () => {
 			underTest.addPostDeployStep('first', () => {
 				return 'yes';
 			});
-			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+			underTest.postDeploy({a: 1}, {c: 2}, {})
 				.then(result => expect(result).toEqual({first: 'yes'}))
 				.then(done, done.fail);
 			pResolve({url: 'http://www.google.com'});
 		});
 		it('returns false when post-deploy hooks are not set up', done => {
-			underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+			underTest.postDeploy({a: 1}, {c: 2}, {})
 				.then(result => expect(result).toBeFalsy())
 				.then(done, done.fail);
 		});
@@ -1800,23 +1798,23 @@ describe('ApiBuilder', () => {
 				hook.and.callFake((opts, config, utils) => {
 					expect(opts).toEqual({a: 1});
 					expect(config).toEqual({c: 2});
-					expect(utils).toEqual({Promise: Promise});
+					expect(utils).toEqual({});
 					expect(hook2).not.toHaveBeenCalled();
 					done();
 					return postPromise;
 				});
-				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+				underTest.postDeploy({a: 1}, {c: 2}, {})
 					.then(done.fail, done.fail);
 			});
 			it('executes the second hook after the first one resolves', done => {
-				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
-					.then(done.fail, () => expect(hook2).toHaveBeenCalledWith({a: 1}, {c: 2}, {Promise: Promise}))
+				underTest.postDeploy({a: 1}, {c: 2}, {})
+					.then(done.fail, () => expect(hook2).toHaveBeenCalledWith({a: 1}, {c: 2}, {}))
 					.then(done);
 				pResolve({url: 'http://www.google.com'});
 				p2Reject('boom');
 			});
 			it('resolves when the second hook resolves', done => {
-				underTest.postDeploy({a: 1}, {c: 2}, {Promise: Promise})
+				underTest.postDeploy({a: 1}, {c: 2}, {})
 					.then(result => {
 						expect(result).toEqual({
 							first: { url: 'http://www.google.com' },
@@ -1842,13 +1840,13 @@ describe('ApiBuilder', () => {
 			underTest.addPostDeployConfig('stageVar', 'Enter var', 'config-var');
 		});
 		it('does nothing if the config arg is not set', done => {
-			underTest.postDeploy({a: 1}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+			underTest.postDeploy({a: 1}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 				.then(() => expect(apiGatewayPromise.createDeploymentPromise).not.toHaveBeenCalled())
 				.then(done, done.fail);
 		});
 		describe('when the config arg is a string', () => {
 			it('sets the variable without prompting', done => {
-				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(result => {
 						expect(apiGatewayPromise.createDeploymentPromise).toHaveBeenCalledWith({
 							restApiId: 'API_1',
@@ -1862,7 +1860,7 @@ describe('ApiBuilder', () => {
 				deploymentResolve('OK');
 			});
 			it('rejects if the deployment rejects', done => {
-				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': 'val-value'}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(done.fail, err => expect(err).toEqual('BOOM!'))
 					.then(done);
 				deploymentReject('BOOM!');
@@ -1870,7 +1868,7 @@ describe('ApiBuilder', () => {
 		});
 		describe('when the config arg is true', () => {
 			it('prompts for the variable', done => {
-				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(done.fail, done.fail);
 				prompter.and.callFake(arg => {
 					expect(arg).toEqual('Enter var');
@@ -1879,7 +1877,7 @@ describe('ApiBuilder', () => {
 				});
 			});
 			it('deploys the stage variable returned by the prompter', done => {
-				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(result => {
 						expect(apiGatewayPromise.createDeploymentPromise).toHaveBeenCalledWith({
 							restApiId: 'API_1',
@@ -1893,7 +1891,7 @@ describe('ApiBuilder', () => {
 				deploymentResolve('OK');
 			});
 			it('rejects if the prompter rejects', done => {
-				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(done.fail, err => {
 						expect(err).toEqual('BOOM');
 						expect(apiGatewayPromise.createDeploymentPromise).not.toHaveBeenCalled();
@@ -1902,7 +1900,7 @@ describe('ApiBuilder', () => {
 				prompter.and.returnValue(Promise.reject('BOOM'));
 			});
 			it('rejects if the deployment rejects', done => {
-				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {Promise: Promise, apiGatewayPromise: apiGatewayPromise})
+				underTest.postDeploy({a: 1, 'config-var': true}, lambdaDetails, {apiGatewayPromise: apiGatewayPromise})
 					.then(done.fail, err => expect(err).toEqual('BOOM'))
 					.then(done);
 				prompter.and.returnValue(Promise.resolve('OK'));

@@ -34,7 +34,6 @@
   },
   "author": "Gojko Adzic <gojko@gojko.com> http://gojko.net",
   "devDependencies": {
-    "bluebird": "^3.3.0",
     "eslint": "^3.12.2",
     "eslint-config-crockford": "^0.2.0",
     "eslint-config-defaults": "^9.0.0",

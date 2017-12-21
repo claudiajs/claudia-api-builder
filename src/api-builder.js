@@ -1,5 +1,6 @@
 const util = require('util'),
 	convertApiGWProxyRequest = require('./convert-api-gw-proxy-request'),
+	sequentialPromiseMap = require('./sequential-promise-map'),
 	lowercaseKeys = require('./lowercase-keys');
 module.exports = function ApiBuilder(options) {
 	'use strict';
@@ -269,7 +270,7 @@ module.exports = function ApiBuilder(options) {
 		};
 
 	self.apiConfig = function () {
-		const result = {version: 3, routes: methodConfigurations};
+		const result = {version: 4, routes: methodConfigurations};
 		if (customCorsHandler !== undefined) {
 			result.corsHandlers = !!customCorsHandler;
 		}
@@ -397,9 +398,9 @@ module.exports = function ApiBuilder(options) {
 				},
 				getVariable = function () {
 					if (typeof options[configOption] === 'string') {
-						return utils.Promise.resolve(options[configOption]);
+						return Promise.resolve(options[configOption]);
 					} else {
-						return prompter(prompt, utils.Promise);
+						return prompter(prompt);
 					}
 				};
 			if (options[configOption]) {
@@ -413,14 +414,14 @@ module.exports = function ApiBuilder(options) {
 		const steps = Object.keys(postDeploySteps),
 			stepResults = {},
 			executeStepMapper = function (stepName) {
-				return utils.Promise.resolve()
+				return Promise.resolve()
 					.then(() => postDeploySteps[stepName](options, lambdaDetails, utils))
 					.then(result => stepResults[stepName] = result);
 			};
 		if (!steps.length) {
-			return utils.Promise.resolve(false);
+			return Promise.resolve(false);
 		}
-		return utils.Promise.map(steps, executeStepMapper, {concurrency: 1})
+		return sequentialPromiseMap(steps, executeStepMapper)
 			.then(() => stepResults);
 	};
 	self.registerAuthorizer = function (name, config) {

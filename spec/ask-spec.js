@@ -1,6 +1,5 @@
 /*global describe, it, expect, process, require, beforeEach, spyOn, jasmine */
-const Promise = require('bluebird'),
-	readline = require('readline'),
+const readline = require('readline'),
 	ask = require('../src/ask');
 describe('ask', () => {
 	'use strict';
@@ -18,24 +17,24 @@ describe('ask', () => {
 			expect(prompt).toEqual('Hi there ');
 			done();
 		});
-		ask('Hi there', Promise)
+		ask('Hi there')
 			.then(done.fail, done.fail);
 	});
 	it('rejects when the question throws error', done => {
 		fakeReadline.question.and.throwError('BOOM');
-		ask('Hi', Promise)
+		ask('Hi')
 			.then(done.fail, err => expect(err.message).toEqual('BOOM'))
 			.then(done);
 	});
 	it('rejects when the value is blank', done => {
 		fakeReadline.question.and.callFake((prompt, callback) => callback(''));
-		ask('Number', Promise)
+		ask('Number')
 			.then(done.fail, err => expect(err).toEqual('Number must be provided'))
 			.then(done);
 	});
 	it('resolves with the value', done => {
 		fakeReadline.question.and.callFake((prompt, callback) => callback('838'));
-		ask('Number', Promise)
+		ask('Number')
 			.then(val => expect(val).toEqual('838'))
 			.then(done, done.fail);
 	});
