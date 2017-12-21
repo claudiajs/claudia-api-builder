@@ -7,6 +7,7 @@ module.exports = function ApiBuilder(options) {
 	let customCorsHandler,
 		customCorsHeaders,
 		customCorsMaxAge,
+		customResponses,
 		unsupportedEventCallback,
 		authorizers,
 		interceptCallback,
@@ -286,6 +287,9 @@ module.exports = function ApiBuilder(options) {
 		if (binaryMediaTypes) {
 			result.binaryMediaTypes = binaryMediaTypes;
 		}
+		if (customResponses) {
+			result.customResponses = customResponses;
+		}
 		return result;
 	};
 	self.corsOrigin = function (handler) {
@@ -441,6 +445,21 @@ module.exports = function ApiBuilder(options) {
 	};
 	self.setBinaryMediaTypes = function (types) {
 		binaryMediaTypes = types;
+	};
+	self.setGatewayResponse = function (responseType, config) {
+		if (!responseType || typeof responseType !== 'string') {
+			throw new Error('response type must be a string');
+		}
+		if (!config || typeof config !== 'object' || Object.keys(config).length === 0) {
+			throw new Error(`Response type ${responseType} configuration is invalid`);
+		}
+		if (!customResponses) {
+			customResponses = {};
+		}
+		if (customResponses[responseType]) {
+			throw new Error(`Response type ${responseType} is already defined`);
+		}
+		customResponses[responseType] = config;
 	};
 	binaryMediaTypes = defaultBinaryMediaTypes;
 	requestFormat = getRequestFormat(options && options.requestFormat);

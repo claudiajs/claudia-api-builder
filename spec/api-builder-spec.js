@@ -1925,6 +1925,36 @@ describe('ApiBuilder', () => {
 				.then(done, done.fail);
 		});
 	});
+	describe('setGatewayResponse', () => {
+		it('does not create any custom responses by default', () => {
+			expect(underTest.apiConfig().customResponses).toBeUndefined();
+		});
+		it('adds a custom response by type', () => {
+			underTest.setGatewayResponse('DEFAULT_4XX', {statusCode: 411});
+			expect(underTest.apiConfig().customResponses).toEqual({
+				'DEFAULT_4XX': {statusCode: 411}
+			});
+		});
+		it('adds multiple responses', () => {
+			underTest.setGatewayResponse('DEFAULT_4XX', {statusCode: 411});
+			underTest.setGatewayResponse('DEFAULT_5XX', {statusCode: 511});
+			expect(underTest.apiConfig().customResponses).toEqual({
+				'DEFAULT_4XX': {statusCode: 411},
+				'DEFAULT_5XX': {statusCode: 511}
+			});
+		});
+		it('rejects to redefine a response', () => {
+			underTest.setGatewayResponse('DEFAULT_4XX', {statusCode: 411});
+			expect(() => underTest.setGatewayResponse('DEFAULT_4XX', {statusCode: 411})).toThrowError('Response type DEFAULT_4XX is already defined');
+		});
+		it('rejects to define a blank response', () => {
+			expect(() => underTest.setGatewayResponse('', {statusCode: 411})).toThrowError('response type must be a string');
+		});
+		it('rejects to define a unconfigured response', () => {
+			expect(() => underTest.setGatewayResponse('DEFAULT_4XX', {})).toThrowError('Response type DEFAULT_4XX configuration is invalid');
+			expect(() => underTest.setGatewayResponse('DEFAULT_4XX', 5)).toThrowError('Response type DEFAULT_4XX configuration is invalid');
+		});
+	});
 	describe('registerAuthorizer', () => {
 		it('creates no authorizers by default', () => {
 			expect(underTest.apiConfig().authorizers).toBeUndefined();
