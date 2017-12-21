@@ -1,6 +1,14 @@
 # How to customise responses (HTTP codes, headers, content types)
 
-By default, Claudia.js uses 500 as the HTTP response code for all errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. You can change all that by using the optional third argument to handler definition methods, or by responding with an instance of an `ApiResponse` class. 
+Claudia automatically configures your API for the most common use case, the way javascript developers expect. The HTTP response code 500 will be used for all runtime errors, and 200 for successful operations. The `application/json` content type is default for both successes and failures. 
+
+Of course, you can easily change all those parameters, add your own custom headers and respond with different codes. There are several ways to configure the response:
+
+* [Static configuration](#static-configuration), when all responses on a route should always use the same code and headers
+* [Use an ApiResponse object](#apiresponse-object), when you want to decide at runtime which HTTP response code/headers to use
+* [Define Custom API Gateway responses](#api-gateway-responses), when you want to configure API Gateway errors (such as 'method not found')
+
+In addition, Claudia API builder has a few nice shortcuts for managing Cross-Origin Resource Sharing (CORS). Check out the [Configuring CORS](cors.md) page for more information.
 
 ## Static configuration
 
@@ -38,9 +46,17 @@ These special rules apply to content types and codes:
 
 To see these options in action, see the  [Serving HTML Example project](https://github.com/claudiajs/example-projects/tree/master/web-serving-html).
 
-## Dynamic responses
+You can also configure header values in the configuration (useful for ending sessions in case of errors, redirecting to a well-known location after log-outs etc),  use the `success.headers` and `error.headers` keys. To do this, list headers as key-value pairs. For example: 
 
-Reply with an instance of `api.ApiResponse` to dynamically set headers and the response code. 
+  ```javascript
+  api.get('/hard-coded-headers', function () {
+  	return 'OK';
+  }, {success: {headers: {'X-Version': '101', 'Content-Type': 'text/plain'}}});
+  ```
+
+## ApiResponse object
+
+To decide at runtime which HTTP response code/headers to use, instead of a string or JSON object, reply with an instance of `api.ApiResponse`. This will allow you to dynamically set headers and the response code. 
 
 ```javascript
 new ApiResponse(body, headers, httpCode)
@@ -58,76 +74,9 @@ api.get('/programmatic-headers', function () {
 });
 
 ```
-
-## Custom headers
-
-
-You can Hard-code header values in the configuration (useful for ending sessions in case of errors, redirecting to a well-known location after log-outs etc),  use the `success.headers` and `error.headers` keys. To do this, list headers as key-value pairs. For example: 
-
-  ```javascript
-  api.get('/hard-coded-headers', function () {
-  	return 'OK';
-  }, {success: {headers: {'X-Version': '101', 'Content-Type': 'text/plain'}}});
-  ```
-
-You can also dynamically assign header values from your API code. Return an instance of `ApiResponse(contents, headers, httpCode)` from your handler method. For example:
-
-```javascript
-api.get('/programmatic-headers', function () {
-  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'});
-}, {success: {headers: ['X-Version', 'Content-Type']}});
-
-```
-
 To see custom headers in action, see the [Custom Headers Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-headers/web.js).
 
-## Controlling Cross-Origin Resource Sharing headers
-
-Claudia API builder automatically sets up the API to allow cross-origin resource sharing (CORS). The most common usage scenario for API Gateway projects is to provide dynamic functions to Web sites served on a different domain, so CORS is necessary to support that use case. To simplify things, by default, APIs allow calls from any domain. 
-
-If you plan to proxy both the main web site and the APIs through a CDN and put them under a single domain, or if you want to restrict access to your APIs, you can override the default behaviour for CORS handling. 
-
-To completely prevent CORS access, use:
-
-```javascript
-api.corsOrigin(false)
-```
-
-To hard-code the CORS origin to a particular domain, call the `corsOrigin` function with a string, representing the target origin:
-
-```javascript
-api.corsOrigin('https://www.claudiajs.com')
-```
-
-To dynamically choose an origin (for example to support different configurations for development and production use, or to allow multiple sub-domains to access your API), pass a JavaScript function into `corsOrigin`. Your function will receive the request object (filled with stage variables and the requesting headers) and should return a string with the contents of the origin header. This has to be a synchronous function (promises are not supported).
-
-```javascript
-api.corsOrigin(function (request) {
-	if (/claudiajs.com$/.test(request.headers.Origin)) {
-		return request.headers.Origin;
-	}
-	return '';
-});
-```
-
-If your API endpoints use HTTP headers as parameters, you may need to allow additional headers in `Access-Control-Allow-Headers`. To do so, just call the `corsHeaders` method on the API, and pass a string with the `Allow-Header` value. 
-
-```javascript
-api.corsHeaders('Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Api-Version');
-```
-
-The browser performs a pre-flight OPTIONS call before each _real_ call (GET, POST, ...), this takes a lot of time, if the browser has to do it every time.
-And you get also charged for AWS API Gateway and Lambda! 
-To avoid this, you can define a `max-age` and the browser will cache the OPTIONS call for this duration.
-Default: disabled
-
-```javascript
-api.corsMaxAge(60); // in seconds 
-```
-
-To see this in action, see the [Custom CORS Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-cors/web.js). For more information on CORS, see the [MDN CORS page](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS).
-
-## Custom Gateway Responses
+## API Gateway Responses
 
 _since claudia-api-builder 2.6, claudia 2.15_
 

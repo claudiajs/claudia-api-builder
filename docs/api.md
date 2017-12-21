@@ -49,6 +49,7 @@ To implement a custom termination workflow, use the [`request.lambdaContext`](ht
 * [The API Builder Request Object](request-object.md)
   * [How  to use the API Gateway proxy object instead of the API Builder](api-gateway-proxy-request.md)
 * [How to customise responses (HTTP codes, headers, content types)](customise-responses.md)
+  * [Controlling Cross-Origin Resource Sharing headers](cors.md)
 * [How to set configuration and environment variables](variables.md)
 * [How to set up authorization (API Keys, IAM and Cognito Authorizers)](authorization.md)
 * [How to control API result caching](caching.md)
