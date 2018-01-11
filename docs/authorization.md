@@ -57,7 +57,11 @@ api.post('/lockedMessages', request => {
 
 ## Custom authorizers
 
-You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) with your API by registering the authorizer using `api.registerAuthorizer`, and then referencing the authorizer by name in the `customAuthorizer` flag of the request handler options. You can register the authorizer in several ways:
+You can set up a [custom authorizer](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) with your API by registering the authorizer using `api.registerAuthorizer`, and then referencing the authorizer by name in the `customAuthorizer` flag of the request handler options. 
+
+Request Based authorizers are supported since `Claudia 3.1.0`.
+
+You can register the authorizer in several ways:
 
 ```javascript
 api.registerAuthorizer(name, options);
@@ -69,9 +73,12 @@ api.registerAuthorizer(name, options);
   * `lambdaArn` &ndash; full ARN of a Lambda function for the authorizer. Useful to wire up authorizers in third-party AWS accounts. If used, don't specify `lambdaName` or `lambdaVersion`.
   * `lambdaVersion` &ndash; _optional_. Additional qualifier for the Lambda authorizer execution. Can be a string version alias, a numerical version or `true`. if `true`, the API will pass the current stage name as the qualifier. This allows you to use different versions of the authorizer for different versions of the API, for example for testing and production. If not defined, the latest version of the Lambda authorizer will be used for all stages of the API.
   * `headerName`: `string` &ndash; _optional_ the header name that contains the authentication token. If not specified, Claudia will use the `Authorization` header
+  * `identitySource`: `string` &ndash; _optional_ a list of identity sources for the authorizer. Useful if you want to specify the full identity source expression from the [Create Authorizer](https://docs.aws.amazon.com/cli/latest/reference/apigateway/create-authorizer.html) API. If not specified, the `headerName` argument is applied.
   * `validationExpression`: `string` &ndash; _optional_ a regular expression to validate authentication tokens
   * `credentials`: `string` &ndash; _optional_ an IAM role ARN for the credentials used to invoke the authorizer
   * `resultTtl`: `int` &ndash; _optional_ period (in seconds) API gateway is allowed to cache policies returned by the custom authorizer
+  * `type`: `string` &ndash; _optional_ the API Gateway custom authorizer type. It can be `REQUEST`, `TOKEN` or `COGNITO_USER_POOLS`. By default, if `providerARNs` are specified, it sets the authorizer as Cognito user pools. Otherwise, the Token authorization is used. You have to specify this argument to use `REQUEST` authorizers.
+
 
 Here are a few examples:
 
@@ -92,6 +99,13 @@ api.registerAuthorizer('companyAuth', { lambdaName: 'companyAuthLambda', lambdaV
 
 // use a third-party authorizer with an ARN and a specific header
 api.registerAuthorizer('companyAuth', { lambdaArn: 'arn:aws:lambda:us-east-1:123456789012:function:MagicAuth', headerName: 'MagicAuth' })
+
+// use a custom request-based authorizer
+api.registerAuthorizer('companyAuth', { 
+  lambdaName: 'companyAuthLambda', 
+  type: 'REQUEST', 
+  identitySource: 'method.request.header.Auth, method.request.querystring.Name' 
+})
 ``` 
 
 After you register the authorizer, turn in on by providing a `customAuthorizer` field in the endpoint configuration.
