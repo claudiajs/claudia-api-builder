@@ -199,6 +199,7 @@ module.exports = function ApiBuilder(options) {
 				routes[routingInfo.path][routingInfo.method] ||
 				routes[routingInfo.path].ANY
 			);
+			console.log(JSON.stringify(event));
 			return getCorsHeaders(event, Object.keys(routes[event.proxyRequest.requestContext.resourcePath] || {}))
 				.then(corsHeaders => {
 					if (routingInfo.method === 'OPTIONS') {
