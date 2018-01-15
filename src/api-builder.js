@@ -169,7 +169,7 @@ module.exports = function ApiBuilder(options) {
 			return result;
 		},
 		getCorsHeaders = function (request, methods) {
-			if (methods.indexOf('ANY') >= 0) {
+			if (methods.indexOf('ANY') >= 0 || methods.length === 0) {
 				methods = supportedMethods;
 			}
 			return Promise.resolve().then(() => {
@@ -181,15 +181,15 @@ module.exports = function ApiBuilder(options) {
 					return '*';
 				}
 			})
-				.then(corsOrigin => {
-					return {
-						'Access-Control-Allow-Origin': corsOrigin,
-						'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
-						'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
-						'Access-Control-Allow-Credentials': corsOrigin && 'true',
-						'Access-Control-Max-Age': customCorsMaxAge || 0
-					};
-				});
+			.then(corsOrigin => {
+				return {
+					'Access-Control-Allow-Origin': corsOrigin,
+					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
+					'Access-Control-Allow-Methods': corsOrigin && methods.sort().join(',') + ',OPTIONS',
+					'Access-Control-Allow-Credentials': corsOrigin && 'true',
+					'Access-Control-Max-Age': customCorsMaxAge || 0
+				};
+			});
 		},
 		routeEvent = function (routingInfo, event, context) {
 			if (!routingInfo) {

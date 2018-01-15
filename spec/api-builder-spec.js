@@ -606,6 +606,25 @@ describe('ApiBuilder', () => {
 								})
 								.then(done, done.fail);
 						});
+						it('reports all methods as allowed in case of a {proxy+} route request not matching any configured route', done => {
+							proxyRequest = {
+								requestContext: {
+									resourcePath: '/abc/def',
+									httpMethod: 'OPTIONS'
+								}
+							};
+							underTest.corsOrigin(() => 'something.com');
+							underTest.proxyRouter(proxyRequest, lambdaContext)
+								.then(() => {
+									expect(responseHeaders()).toEqual(jasmine.objectContaining({
+										'Access-Control-Allow-Origin': 'something.com',
+										'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+										'Access-Control-Allow-Methods': 'DELETE,GET,HEAD,PATCH,POST,PUT,OPTIONS'
+									}));
+								})
+								.then(done, done.fail);
+
+						});
 					});
 					describe('static headers', () => {
 						it('can supply additional static headers in the handler config', done => {
