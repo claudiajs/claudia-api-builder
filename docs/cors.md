@@ -42,4 +42,10 @@ Default: disabled
 api.corsMaxAge(60); // in seconds 
 ```
 
+To completely remove CORS headers, use:
+
+```javascript
+api.corsHeaders(false)
+```
+
 To see this in action, see the [Custom CORS Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-cors/web.js). For more information on CORS, see the [MDN CORS page](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS).

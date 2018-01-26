@@ -182,6 +182,9 @@ module.exports = function ApiBuilder(options) {
 				}
 			})
 			.then(corsOrigin => {
+				if (customCorsHeaders !== undefined && !customCorsHeaders) {
+					return {};
+				}
 				return {
 					'Access-Control-Allow-Origin': corsOrigin,
 					'Access-Control-Allow-Headers': corsOrigin && (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
@@ -306,7 +309,9 @@ module.exports = function ApiBuilder(options) {
 		}
 	};
 	self.corsHeaders = function (headers) {
-		if (typeof headers === 'string') {
+		if (!headers) {
+			customCorsHeaders = false;
+		} else if (typeof headers === 'string') {
 			customCorsHeaders = headers;
 		} else {
 			throw 'corsHeaders only accepts strings';
