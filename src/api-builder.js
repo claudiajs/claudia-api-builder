@@ -182,7 +182,7 @@ module.exports = function ApiBuilder(options) {
 				}
 			})
 			.then(corsOrigin => {
-				if (!customCorsHeaders) {
+				if (customCorsHeaders !== undefined && !customCorsHeaders) {
 					return {};
 				}
 				return {
