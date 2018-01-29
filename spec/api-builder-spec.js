@@ -598,11 +598,10 @@ describe('ApiBuilder', () => {
 							underTest.corsOrigin(false);
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => {
-									expect(responseHeaders()).toEqual(jasmine.objectContaining({
-										'Access-Control-Allow-Origin': '',
-										'Access-Control-Allow-Headers': '',
-										'Access-Control-Allow-Methods': ''
-									}));
+									const headers = responseHeaders();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Origin')).toBeFalsy();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Headers')).toBeFalsy();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Methods')).toBeFalsy();
 								})
 								.then(done, done.fail);
 						});
@@ -1127,11 +1126,10 @@ describe('ApiBuilder', () => {
 							underTest.corsOrigin(false);
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => {
-									expect(responseHeaders()).toEqual(jasmine.objectContaining({
-										'Access-Control-Allow-Origin': '',
-										'Access-Control-Allow-Headers': '',
-										'Access-Control-Allow-Methods': ''
-									}));
+									const headers = responseHeaders();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Origin')).toBeFalsy();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Headers')).toBeFalsy();
+									expect (headers.hasOwnProperty('Access-Control-Allow-Methods')).toBeFalsy();
 								})
 								.then(done, done.fail);
 						});
@@ -1590,11 +1588,6 @@ describe('ApiBuilder', () => {
 					expect(lambdaContext.done).toHaveBeenCalledWith(null, {
 						statusCode: 200,
 						headers: {
-							'Access-Control-Allow-Origin': '',
-							'Access-Control-Allow-Headers': '',
-							'Access-Control-Allow-Methods': '',
-							'Access-Control-Allow-Credentials': '',
-							'Access-Control-Max-Age': 0
 						},
 						body: ''
 					});
