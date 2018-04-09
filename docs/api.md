@@ -37,7 +37,7 @@ api.get('/greet', function (request) {
 	return request.queryString.name + ' is amazing';
 });
 api.post('/set-user', function (request) {
-  return new Promise((resolve, reject) {
+  return new Promise(function (resolve, reject) {
     // some asynchronous operation
   }).then(() => request.queryString.name + ' was saved');
 });
