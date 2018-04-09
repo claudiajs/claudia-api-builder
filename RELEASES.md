@@ -1,5 +1,9 @@
 # Release history
 
+## 4.0.0 9 April 2017
+
+- bumping version for sync with claudia
+
 ## 2.5.1, 7 June 2017
 
 - easier handling for Lambda environment and stage variables, using `{mergeVars: true}` 
