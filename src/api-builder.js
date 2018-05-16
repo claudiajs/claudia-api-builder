@@ -190,7 +190,7 @@ module.exports = function ApiBuilder(options) {
 					'Access-Control-Allow-Headers': (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
 					'Access-Control-Allow-Methods': methods.sort().join(',') + ',OPTIONS',
 					'Access-Control-Allow-Credentials': 'true',
-					'Access-Control-Max-Age': customCorsMaxAge || 0
+					'Access-Control-Max-Age': customCorsMaxAge || '0'
 				};
 			});
 		},
