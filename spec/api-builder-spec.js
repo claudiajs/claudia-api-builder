@@ -1574,7 +1574,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 							'Access-Control-Allow-Methods': 'GET,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
@@ -1607,7 +1607,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 							'Access-Control-Allow-Methods': 'GET,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
@@ -1628,7 +1628,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 							'Access-Control-Allow-Methods': 'GET,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
@@ -1646,7 +1646,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 							'Access-Control-Allow-Methods': 'GET,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
@@ -1676,7 +1676,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'X-Api-Request',
 							'Access-Control-Allow-Methods': 'GET,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
@@ -1695,7 +1695,7 @@ describe('ApiBuilder', () => {
 							'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
 							'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
 							'Access-Control-Allow-Credentials': 'true',
-							'Access-Control-Max-Age': 0
+							'Access-Control-Max-Age': '0'
 						},
 						body: ''
 					});
