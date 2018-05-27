@@ -28,13 +28,13 @@
     "*.js"
   ],
   "scripts": {
-    "pretest": "eslint .",
+    "pretest": "eslint --fix .",
     "test": "node spec/support/jasmine-runner.js",
     "debug": "node debug spec/support/jasmine-runner.js"
   },
   "author": "Gojko Adzic <gojko@gojko.com> http://gojko.net",
   "devDependencies": {
-    "eslint": "^3.12.2",
+    "eslint": "^4.19.1",
     "eslint-config-crockford": "^0.2.0",
     "eslint-config-defaults": "^9.0.0",
     "jasmine": "^2.5.2",

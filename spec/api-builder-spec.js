@@ -2023,4 +2023,24 @@ describe('ApiBuilder', () => {
 			expect(underTest.apiConfig().binaryMediaTypes).toEqual(['image/jpg']);
 		});
 	});
+	describe('error status code', () => {
+		it('handles a thrown error', () => {
+			underTest.get('/error', () => {
+				const error = new Error('DB Unavailable');
+				error.statusCode = 503;
+				throw error;
+			});
+			const event = {
+				requestContext: {
+					httpMethod: 'GET',
+					resourcePath: '/error'
+				}
+			};
+			return underTest.proxyRouter(event, lambdaContext)
+				.then(() => {
+					expect(responseStatusCode()).toEqual(503);
+					expect(responseBody()).toEqual('{"errorMessage":"DB Unavailable"}');
+				});
+		});
+	});
 });
