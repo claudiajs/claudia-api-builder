@@ -2024,10 +2024,9 @@ describe('ApiBuilder', () => {
 		});
 	});
 	describe('error status code', () => {
-		it('handles a thrown error', () => {
+		it('assigns the default code to a thrown error', () => {
 			underTest.get('/error', () => {
 				const error = new Error('DB Unavailable');
-				error.statusCode = 503;
 				throw error;
 			});
 			const event = {
@@ -2038,7 +2037,7 @@ describe('ApiBuilder', () => {
 			};
 			return underTest.proxyRouter(event, lambdaContext)
 				.then(() => {
-					expect(responseStatusCode()).toEqual(503);
+					expect(responseStatusCode()).toEqual(500);
 					expect(responseBody()).toEqual('{"errorMessage":"DB Unavailable"}');
 				});
 		});

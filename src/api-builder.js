@@ -72,7 +72,7 @@ module.exports = function ApiBuilder(options) {
 					'error': 500
 				},
 				staticCode = (configuration && configuration.code) || (typeof configuration === 'number' && configuration),
-				dynamicCode = (result && ((isApiResponse(result) && result.code) || result.statusCode));
+				dynamicCode = result && (isApiResponse(result) && result.code);
 			return dynamicCode || staticCode || defaultCode[resultType];
 		},
 		getRedirectLocation = function (configuration, result) {
