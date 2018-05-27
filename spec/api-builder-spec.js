@@ -2023,4 +2023,70 @@ describe('ApiBuilder', () => {
 			expect(underTest.apiConfig().binaryMediaTypes).toEqual(['image/jpg']);
 		});
 	});
+	describe('errorHandler', () => {
+		const headers = {
+			'Access-Control-Allow-Credentials': 'true',
+			'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+			'Access-Control-Allow-Methods': 'GET,OPTIONS',
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Max-Age': '0',
+			'Content-Type': 'application/json'
+		};
+
+		it('handles a thrown error', () => {
+			const api = new ApiBuilder({
+				errorHandler: error => {
+					return new api.ApiResponse(error.message || 'Oops', {}, error.statusCode || 500);
+				}
+			});
+			api.get('/throw', () => {
+				throw new Error('DB Unreachable');
+			});
+			return api.proxyRouter(
+				{
+					requestContext: {
+						httpMethod: 'GET',
+						resourcePath: '/throw'
+					}
+				},
+				lambdaContext
+			).then(() => {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					body: '"DB Unreachable"',
+					headers,
+					statusCode: 500
+				});
+			});
+		});
+
+
+		it('handles a reject error', () => {
+			const api = new ApiBuilder({
+				errorHandler: error => {
+					return new api.ApiResponse(error.message || 'Oops', {}, error.statusCode || 500);
+				}
+			});
+			api.get('/reject', () => {
+				const error = new Error('Network Down');
+				error.statusCode = 503;
+				return Promise.reject(error);
+			});
+			return api.proxyRouter(
+				{
+					requestContext: {
+						httpMethod: 'GET',
+						resourcePath: '/reject'
+					}
+				},
+				lambdaContext
+			).then(() => {
+				expect(lambdaContext.done).toHaveBeenCalledWith(null, {
+					body: '"Network Down"',
+					headers,
+					statusCode: 503
+				});
+			});
+		});
+
+	});
 });

@@ -41,6 +41,9 @@ module.exports = function ApiBuilder(options) {
 			'application/pdf',
 			'application/zip'
 		],
+		errorHandler = (options && options.errorHandler) || function (error) {
+			return Promise.reject(error);
+		},
 		logger = (options && options.logger) || console.log,
 		methodConfigurations = {},
 		routes = {},
@@ -181,18 +184,18 @@ module.exports = function ApiBuilder(options) {
 					return '*';
 				}
 			})
-			.then(corsOrigin => {
-				if (!corsOrigin) {
-					return {};
-				};
-				return {
-					'Access-Control-Allow-Origin': corsOrigin,
-					'Access-Control-Allow-Headers': (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
-					'Access-Control-Allow-Methods': methods.sort().join(',') + ',OPTIONS',
-					'Access-Control-Allow-Credentials': 'true',
-					'Access-Control-Max-Age': customCorsMaxAge || '0'
-				};
-			});
+				.then(corsOrigin => {
+					if (!corsOrigin) {
+						return {};
+					};
+					return {
+						'Access-Control-Allow-Origin': corsOrigin,
+						'Access-Control-Allow-Headers': (customCorsHeaders || 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'),
+						'Access-Control-Allow-Methods': methods.sort().join(',') + ',OPTIONS',
+						'Access-Control-Allow-Credentials': 'true',
+						'Access-Control-Max-Age': customCorsMaxAge || '0'
+					};
+				});
 		},
 		routeEvent = function (routingInfo, event, context) {
 			if (!routingInfo) {
@@ -213,6 +216,7 @@ module.exports = function ApiBuilder(options) {
 					} else if (handler) {
 						return Promise.resolve()
 							.then(() => handler(event, context))
+							.catch(errorHandler)
 							.then(result => packResult(result, routingInfo, corsHeaders, 'success'))
 							.catch(error => {
 								logError(error);
