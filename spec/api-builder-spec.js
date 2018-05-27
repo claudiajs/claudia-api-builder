@@ -2024,7 +2024,7 @@ describe('ApiBuilder', () => {
 		});
 	});
 	describe('error status code', () => {
-		it('assigns the default code to a thrown error', () => {
+		it('assigns the default code to a thrown error', done => {
 			underTest.get('/error', () => {
 				const error = new Error('DB Unavailable');
 				throw error;
@@ -2039,7 +2039,7 @@ describe('ApiBuilder', () => {
 				.then(() => {
 					expect(responseStatusCode()).toEqual(500);
 					expect(responseBody()).toEqual('{"errorMessage":"DB Unavailable"}');
-				});
+				}).then(done, done.fail);
 		});
 	});
 });
