@@ -81,10 +81,10 @@ describe('sequentialPromiseMap', () => {
 	});
 	it('rejects with the error of the first rejected promise', done => {
 		sequentialPromiseMap(['a', 'b', 'c'], generator)
-		.then(done.fail, err => {
-			expect(err).toEqual('boom');
-			done();
-		});
+			.then(done.fail, err => {
+				expect(err).toEqual('boom');
+				done();
+			});
 		waitFor(0).then(promiseContainer => promiseContainer.promise.resolve('aaa'));
 		waitFor(1).then(promiseContainer => promiseContainer.promise.reject('boom'));
 	});
