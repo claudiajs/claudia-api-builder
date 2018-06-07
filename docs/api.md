@@ -1,6 +1,6 @@
 # API definition syntax
 
-> this is the API documentation for version 2.x. If you are looking for older (1.x) versions, check out [version 1.x API documentation](https://github.com/claudiajs/claudia-api-builder/blob/4f5c30df0365812765806ae2f9fd97e7a1287ed9/docs/api.md)
+> this is the API documentation for versions 2.x and later. If you are looking for older (1.x) versions, check out [version 1.x API documentation](https://github.com/claudiajs/claudia-api-builder/blob/4f5c30df0365812765806ae2f9fd97e7a1287ed9/docs/api.md)
 
 Claudia API builder makes it easy to configure and deploy API Gateway definitions together with a Lambda function, providing an abstraction that is similar to lightweight JavaScript web servers such as `express`. 
 
