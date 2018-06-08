@@ -128,11 +128,11 @@ module.exports = function ApiBuilder(options) {
 			if (contents && typeof (contents) !== 'string') {
 				contents = safeStringify(contents);
 			}
-			if (getCanonicalContentType(contentType) === 'application/json') {
-				return JSON.stringify({errorMessage: contents || '' });
-			} else {
+			if (getCanonicalContentType(contentType) !== 'application/json') {
 				return contents || '';
 			}
+			return isApiResponse(handlerResult) ?
+				contents : JSON.stringify({errorMessage: contents || '' });
 		},
 		getBody = function (contentType, handlerResult, resultType) {
 			return resultType === 'success' ? getSuccessBody(contentType, handlerResult) : getErrorBody(contentType, handlerResult);
@@ -321,11 +321,7 @@ module.exports = function ApiBuilder(options) {
 			throw 'corsMaxAge only accepts numbers';
 		}
 	};
-	self.ApiResponse = function (responseBody, responseHeaders, code) {
-		this.response = responseBody;
-		this.headers = responseHeaders;
-		this.code = code;
-	};
+	self.ApiResponse = module.exports.ApiResponse; // TODO deprecated, remove for next major version?
 	self.unsupportedEvent = function (callback) {
 		v2DeprecationWarning('.unsupportedEvent handlers');
 		unsupportedEventCallback = callback;
@@ -467,3 +463,11 @@ module.exports = function ApiBuilder(options) {
 	requestFormat = getRequestFormat(options && options.requestFormat);
 	['ANY'].concat(supportedMethods).forEach(setUpHandler);
 };
+
+module.exports.ApiResponse = function (response, headers, code) {
+	'use strict';
+	this.response = response;
+	this.headers = headers;
+	this.code = code;
+};
+

@@ -10,7 +10,7 @@
 
 ## 2.4.2, 3 May 2017
 
-- API builder will not explode, but provide a helpful error messahe when invalid or circular JSON structures passed as application/json requests or responses
+- API builder will not explode, but provide a helpful error message when invalid or circular JSON structures passed as application/json requests or responses
 
 ## 2.4.0, 17 January 2017
 
