@@ -229,8 +229,8 @@ module.exports = function ApiBuilder(options) {
 					return {};
 				}
 				return {
-					path: request.requestContext.resourcePath,
-					method: request.requestContext.httpMethod
+					path: request.path,
+					method: request.httpMethod
 				};
 			} else {
 				return request.context || {};
