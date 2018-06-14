@@ -653,7 +653,7 @@ describe('ApiBuilder', () => {
 					});
 					describe('dynamic headers', () => {
 						it('can supply additional dynamic headers in the response', done => {
-							requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'})));
+							requestHandler.and.returnValue(Promise.reject(new ApiBuilder.ApiResponse('', {'Api-Type': 'text/markdown'})));
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => expect(responseHeaders('Api-Type')).toEqual('text/markdown'))
 								.then(done, done.fail);
@@ -662,13 +662,13 @@ describe('ApiBuilder', () => {
 							underTest.get('/echo', requestHandler, {
 								error: { contentType: 'text/xml', headers: { 'Api-Type': '123'} }
 							});
-							requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {'Api-Type': 'text/markdown'})));
+							requestHandler.and.returnValue(Promise.resolve(new ApiBuilder.ApiResponse('', {'Api-Type': 'text/markdown'})));
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => expect(responseHeaders('Api-Type')).toEqual('text/markdown'))
 								.then(done, done.fail);
 						});
 						it('overrides CORS headers with dynamic headers', done => {
-							requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('', {'Access-Control-Allow-Origin': 'x.com'})));
+							requestHandler.and.returnValue(Promise.reject(new ApiBuilder.ApiResponse('', {'Access-Control-Allow-Origin': 'x.com'})));
 							underTest.proxyRouter(proxyRequest, lambdaContext)
 								.then(() => expect(responseHeaders('Access-Control-Allow-Origin')).toEqual('x.com'))
 								.then(done, done.fail);
@@ -856,7 +856,7 @@ describe('ApiBuilder', () => {
 										expect(responseBody()).toEqual('{"errorMessage":"boom!"}');
 										expect(responseStatusCode()).toEqual(404);
 									}).then(done, done.fail);
-								requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse('boom!', {'X-Api': 1}, 404)));
+								requestHandler.and.returnValue(Promise.reject(new underTest.ApiResponse({errorMessage: 'boom!'}, {'X-Api': 1}, 404)));
 							});
 							['', undefined, null, false].forEach(literal => {
 								it(`uses blank message for [${literal}]`, done => {
@@ -2039,6 +2039,23 @@ describe('ApiBuilder', () => {
 				.then(() => {
 					expect(responseStatusCode()).toEqual(500);
 					expect(responseBody()).toEqual('{"errorMessage":"DB Unavailable"}');
+				}).then(done, done.fail);
+		});
+		it('assigns the code of a thrown ApiResponse', done => {
+			underTest.get('/error', () => {
+				const error = new ApiBuilder.ApiResponse('<error>O dear!</error>', {}, 555);
+				throw error;
+			});
+			const event = {
+				requestContext: {
+					httpMethod: 'GET',
+					resourcePath: '/error'
+				}
+			};
+			return underTest.proxyRouter(event, lambdaContext)
+				.then(() => {
+					expect(responseStatusCode()).toEqual(555);
+					expect(responseBody()).toEqual('<error>O dear!</error>');
 				}).then(done, done.fail);
 		});
 	});

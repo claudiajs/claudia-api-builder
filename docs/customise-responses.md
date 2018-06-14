@@ -56,7 +56,7 @@ You can also configure header values in the configuration (useful for ending ses
 
 ## ApiResponse object
 
-To decide at runtime which HTTP response code/headers to use, instead of a string or JSON object, reply with an instance of `api.ApiResponse`. This will allow you to dynamically set headers and the response code. 
+To decide at runtime which HTTP response code/headers to use, instead of a string or JSON object, return or throw an instance of `ApiBuilder.ApiResponse`. This will allow you to dynamically set headers and the response code. 
 
 ```javascript
 new ApiResponse(body, headers, httpCode)
@@ -67,13 +67,28 @@ new ApiResponse(body, headers, httpCode)
 * `httpCode`: numeric response code. Defaults to 200 for successful responses and 500 for errors.
 
 Here's an example:
-
 ```javascript
 api.get('/programmatic-headers', function () {
-  return new api.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'}, 204);
+  return new ApiBuilder.ApiResponse('OK', {'X-Version': '202', 'Content-Type': 'text/plain'}, 204);
 });
-
 ```
+
+You could throw:
+```javascript
+api.get('/error', function () {
+  throw new ApiBuilder.ApiResponse('<error>NOT OK</error>', {'Content-Type': 'text/xml'}, 500);
+});
+```
+
+Or resolve/reject:
+```javascript
+api.get('/heartbeat', () =>
+  gateway.heartbeat()
+    .then(() => new ApiBuilder.ApiResponse({healthy:true}, 200))
+    .catch(() => new ApiBuilder.ApiResponse({healthy:false}, 503))
+});
+```
+
 To see custom headers in action, see the [Custom Headers Example Project](https://github.com/claudiajs/example-projects/blob/master/web-api-custom-headers/web.js).
 
 ## API Gateway Responses
