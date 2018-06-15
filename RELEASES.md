@@ -1,5 +1,11 @@
 # Release history
 
+## 4.1.0 15 June 2017
+
+- ApiResponse is now static, so it's easier to use in your own functions, thanks to [Aaron J. Lang](https://github.com/aaronjameslang)
+- bugfix for greedy path routing when the API_GW request type is used, thanks to [Aaron J. Lang](https://github.com/aaronjameslang)
+
+
 ## 4.0.0 9 April 2017
 
 - bumping version for sync with claudia
