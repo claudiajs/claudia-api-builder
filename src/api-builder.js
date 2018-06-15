@@ -84,6 +84,21 @@ module.exports = function ApiBuilder(options) {
 		getCanonicalContentType = function (contentType) {
 			return (contentType && contentType.split(';')[0]) || 'application/json';
 		},
+		safeToString = function (contents) {
+			if (!contents) {
+				return '';
+			}
+			if (Buffer.isBuffer(contents)) {
+				return contents.toString('base64');
+			}
+			if (typeof contents === 'string') {
+				return contents;
+			}
+			if (typeof contents === 'object') {
+				return safeStringify(contents);
+			}
+			return String(contents);
+		},
 		getSuccessBody = function (contentType, handlerResult) {
 			const contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
 			if (getCanonicalContentType(contentType) === 'application/json') {
@@ -97,15 +112,7 @@ module.exports = function ApiBuilder(options) {
 					}
 				}
 			} else {
-				if (!contents) {
-					return '';
-				} else if (Buffer.isBuffer(contents)) {
-					return contents.toString('base64');
-				} else if (typeof contents === 'object') {
-					return safeStringify(contents);
-				} else {
-					return String(contents);
-				}
+				return safeToString(contents);
 			}
 		},
 		isError = function (object) {
@@ -120,19 +127,25 @@ module.exports = function ApiBuilder(options) {
 			}
 			logger(logInfo);
 		},
+		getErrorResponseContents = function (handlerResult) {
+			if (!handlerResult) {
+				return '';
+			}
+			if (isApiResponse(handlerResult)) {
+				return handlerResult.response;
+			}
+			if (isError(handlerResult) && handlerResult.message) {
+				return handlerResult.message;
+			}
+			return handlerResult;
+		},
 		getErrorBody = function (contentType, handlerResult) {
-			let contents = isApiResponse(handlerResult) ? handlerResult.response : handlerResult;
-			if (isError(contents)) {
-				contents = contents.message;
+			const responseContents = safeToString(getErrorResponseContents(handlerResult));
+
+			if (isApiResponse(handlerResult) || getCanonicalContentType(contentType) !== 'application/json') {
+				return responseContents;
 			}
-			if (contents && typeof (contents) !== 'string') {
-				contents = safeStringify(contents);
-			}
-			if (getCanonicalContentType(contentType) !== 'application/json') {
-				return contents || '';
-			}
-			return isApiResponse(handlerResult) ?
-				contents : JSON.stringify({errorMessage: contents || '' });
+			return JSON.stringify({errorMessage: responseContents || '' });
 		},
 		getBody = function (contentType, handlerResult, resultType) {
 			return resultType === 'success' ? getSuccessBody(contentType, handlerResult) : getErrorBody(contentType, handlerResult);
