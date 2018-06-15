@@ -127,6 +127,8 @@ describe('ApiBuilder', () => {
 		let proxyRequest, apiRequest;
 		beforeEach(() => {
 			proxyRequest = {
+				httpMethod: 'GET',
+				path: '/',
 				queryStringParameters: {
 					'a': 'b'
 				},
@@ -227,6 +229,22 @@ describe('ApiBuilder', () => {
 			underTest.get('/', requestHandler);
 			underTest.proxyRouter(proxyRequest, lambdaContext)
 				.then(() => expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext))
+				.then(done, done.fail);
+		});
+		it('correctly routes greedy proxy paths', done => {
+			const request = {
+				'httpMethod': 'GET',
+				'path': '/coconuts',
+				'resource': '/{proxy+}',
+				'requestContext': {
+					'path': '/{proxy+}',
+					'resourcePath': '/{proxy+}'
+				}
+			};
+			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
+			underTest.get('/coconuts', requestHandler);
+			underTest.proxyRouter(request, lambdaContext)
+				.then(() => expect(requestHandler).toHaveBeenCalledWith(request, lambdaContext))
 				.then(done, done.fail);
 		});
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
