@@ -206,14 +206,19 @@ module.exports = function ApiBuilder(options) {
 				};
 			});
 		},
+		getHandler = function (routingInfo) {
+			// Check for path before resource, as path is more specific
+			const options = routes[routingInfo.path] || routes[routingInfo.resource];
+			if (!options) {
+				return false;
+			}
+			return options[routingInfo.method] || options.ANY;
+		},
 		routeEvent = function (routingInfo, event, context) {
 			if (!routingInfo) {
 				throw 'routingInfo not set';
 			}
-			const handler = routes[routingInfo.path] && (
-				routes[routingInfo.path][routingInfo.method] ||
-				routes[routingInfo.path].ANY
-			);
+			const handler = getHandler(routingInfo);
 			return getCorsHeaders(event, Object.keys(routes[routingInfo.path] || {}))
 				.then(corsHeaders => {
 					if (routingInfo.method === 'OPTIONS') {
@@ -231,7 +236,10 @@ module.exports = function ApiBuilder(options) {
 								return packResult(error, routingInfo, corsHeaders, 'error');
 							});
 					} else {
-						return Promise.reject(`no handler for ${routingInfo.method} ${routingInfo.path}`);
+						const message = routingInfo.resource && routingInfo.resource !== routingInfo.path ?
+							`no handler for ${routingInfo.method} ${routingInfo.path} or ${routingInfo.resource}` :
+							`no handler for ${routingInfo.method} ${routingInfo.path}`;
+						return Promise.reject(message);
 					}
 				});
 
@@ -242,8 +250,9 @@ module.exports = function ApiBuilder(options) {
 					return {};
 				}
 				return {
-					path: request.requestContext.resourcePath,
-					method: request.requestContext.httpMethod
+					method: request.httpMethod,
+					path: request.path,
+					resource: request.resource
 				};
 			} else {
 				return request.context || {};

@@ -127,6 +127,8 @@ describe('ApiBuilder', () => {
 		let proxyRequest, apiRequest;
 		beforeEach(() => {
 			proxyRequest = {
+				httpMethod: 'GET',
+				path: '/',
 				queryStringParameters: {
 					'a': 'b'
 				},
@@ -228,6 +230,59 @@ describe('ApiBuilder', () => {
 			underTest.proxyRouter(proxyRequest, lambdaContext)
 				.then(() => expect(requestHandler).toHaveBeenCalledWith(proxyRequest, lambdaContext))
 				.then(done, done.fail);
+		});
+		it('correctly routes greedy proxy paths', done => {
+			const request = {
+				'httpMethod': 'GET',
+				'path': '/coconuts',
+				'resource': '/{proxy+}',
+				'requestContext': {
+					'path': '/{proxy+}',
+					'resourcePath': '/{proxy+}'
+				}
+			};
+			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
+			underTest.get('/coconuts', requestHandler);
+			underTest.proxyRouter(request, lambdaContext)
+				.then(() => expect(requestHandler).toHaveBeenCalledWith(request, lambdaContext))
+				.then(done, done.fail);
+		});
+		it('correctly routes dynamic paths', done => {
+			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
+			underTest.get('/user/{userId}', req => `Hello ${req.pathParameters.userId}!`);
+			underTest.proxyRouter({
+				httpMethod: 'GET',
+				path: '/user/123',
+				pathParameters: {userId: '123'},
+				resource: '/user/{userId}',
+				requestContext: {
+					httpMethod: 'GET',
+					resourcePath: '/user/{userId}'
+				}
+			}, lambdaContext)
+				.then(() => {
+					expect(responseStatusCode()).toEqual(200);
+					expect(responseBody()).toEqual('"Hello 123!"');
+				}).then(done, done.fail);
+		});
+		it('correctly routes dynamic path exceptions', done => {
+			underTest = new ApiBuilder({requestFormat: 'AWS_PROXY'});
+			underTest.get('/user/{userId}', req => `Hello ${req.pathParameters.userId}!`);
+			underTest.get('/user/all', () => 'Hello World!');
+			underTest.proxyRouter({
+				httpMethod: 'GET',
+				path: '/user/all',
+				pathParameters: {userId: 'all'},
+				resource: '/user/{userId}',
+				requestContext: {
+					httpMethod: 'GET',
+					resourcePath: '/user/{userId}'
+				}
+			}, lambdaContext)
+				.then(() => {
+					expect(responseStatusCode()).toEqual(200);
+					expect(responseBody()).toEqual('"Hello World!"');
+				}).then(done, done.fail);
 		});
 		['GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'].forEach(function (method) {
 			it(`can route calls to a ${method} method`, done => {
