@@ -28,7 +28,7 @@ For example:
 
 ```javascript
 api.get('/greet', function (request) {
-	return request.queryString.name + ' is ' + superb();
+	return request.queryString.name + ' is ' + superb.random();
 }, {
   success: { contentType: 'text/plain' }, 
   error: {code: 403}

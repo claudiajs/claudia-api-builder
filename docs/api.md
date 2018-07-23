@@ -12,7 +12,7 @@ var ApiBuilder = require('claudia-api-builder'),
 module.exports = api;
 
 api.get('/greet', function (request) {
-	return request.queryString.name + ' is ' + superb();
+	return request.queryString.name + ' is ' + superb.random();
 });
 ```
 
