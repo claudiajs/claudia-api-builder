@@ -312,7 +312,7 @@ describe('ApiBuilder', () => {
 					.then(() => expect(postRequestHandler).toHaveBeenCalledWith(apiRequest, lambdaContext))
 					.then(done, done.fail);
 			});
-			it('complains about an unsuported route', done => {
+			it('complains about an unsupported route', done => {
 				proxyRequest.requestContext.resourcePath = apiRequest.context.path = '/no';
 				underTest.proxyRouter(proxyRequest, lambdaContext)
 					.then(() => expect(lambdaContext.done).toHaveBeenCalledWith('no handler for GET /no'))
@@ -1532,9 +1532,24 @@ describe('ApiBuilder', () => {
 				expect(context).toEqual(lambdaContext);
 				expect(callback).toEqual(fakeCallback);
 				expect(lambdaContext.done).not.toHaveBeenCalled();
+				expect(fakeCallback).not.toHaveBeenCalled();
 				done();
 			});
 			underTest.proxyRouter({a: 1}, lambdaContext, fakeCallback);
+		});
+		it('should be able to return a response', (done) => {
+			// Besides context.done and callback
+			//   simply returning should be allowed
+			const fakeCallback = jasmine.createSpy();
+			underTest.unsupportedEvent((event, context, callback) => {
+				expect(context.done).not.toHaveBeenCalled();
+				expect(callback).not.toHaveBeenCalled();
+				return 'Return of the Jedi';
+			});
+			underTest.proxyRouter({a: 1}, lambdaContext, fakeCallback).then(result => {
+				expect(result).toEqual('Return of the Jedi');
+				done();
+			});
 		});
 	});
 

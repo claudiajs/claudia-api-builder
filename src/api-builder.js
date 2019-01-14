@@ -370,7 +370,7 @@ module.exports = function ApiBuilder(options) {
 							.then(result => context.done(null, result));
 					} else {
 						if (unsupportedEventCallback) {
-							unsupportedEventCallback(event, context, callback);
+							return unsupportedEventCallback(event, context, callback);
 						} else {
 							return Promise.reject('event does not contain routing information');
 						}
