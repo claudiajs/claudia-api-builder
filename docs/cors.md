@@ -20,8 +20,8 @@ To dynamically choose an origin (for example to support different configurations
 
 ```javascript
 api.corsOrigin(function (request) {
-	if (/claudiajs.com$/.test(request.headers.Origin)) {
-		return request.headers.Origin;
+	if (/claudiajs.com$/.test(request.normalizedHeaders.origin)) {
+		return request.normalizedHeaders.origin;
 	}
 	return '';
 });
