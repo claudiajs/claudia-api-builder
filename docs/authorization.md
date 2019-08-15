@@ -54,6 +54,19 @@ api.post('/lockedMessages', request => {
 }, { cognitoAuthorizer: 'MyCognitoAuth' })
 ```
 
+### Adding authorization scopes to Cognito Authorizers
+_since claudia 5.7.0_
+
+Add authorization scopes to your Cognito Authorizer by providing an array of strings in the `authorizationScopes` property:
+
+```javascript
+api.get('/locked', () => {
+ //...
+}, { 
+  cognitoAuthorizer: 'CognitoOauth2Auth',
+  authorizationScopes: ['email', 'openid']
+});
+```
 
 ## Custom authorizers
 
