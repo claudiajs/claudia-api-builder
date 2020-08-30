@@ -176,7 +176,7 @@ module.exports = function ApiBuilder(options) {
 			if (isApiResponse(handlerResult)) {
 				mergeObjects(handlerResult.headers, result.headers);
 
-				if(handlerResult.multiValueHeaders){
+				if (handlerResult.multiValueHeaders) {
 					result.multiValueHeaders = handlerResult.multiValueHeaders;
 				}
 			}
