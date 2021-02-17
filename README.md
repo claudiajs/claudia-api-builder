@@ -6,9 +6,9 @@
 [![Build Status](https://travis-ci.org/claudiajs/claudia-api-builder.svg?branch=master)](https://travis-ci.org/claudiajs/claudia-api-builder)
 [![Join the chat at https://gitter.im/claudiajs/claudia](https://badges.gitter.im/claudiajs/claudia.svg)](https://gitter.im/claudiajs/claudia?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Claudia API Builder makes it possible to use AWS API Gateway as if it were a lightweight JavaScript web server, so it helps developers get started easily and reduces the learning curve required to launch web APIs in AWS. [Check out this video to see how to create and deploy an API in under 5 minutes](https://vimeo.com/156232471).
+Claudia API Builder makes it possible to use AWS API Gateway as if it were a lightweight JavaScript web server, so it helps developers get started easily and reduces the learning curve required to launch web APIs in AWS. [Check out this video to see how to create and deploy an API in under 5 minutes](https://youtu.be/lsXHWy4b-I0).
 
-[![Claudia.js Introduction Video](https://claudiajs.com/assets/claudia-intro-video.png)](https://vimeo.com/156232471)
+[![Claudia.js Introduction Video](https://claudiajs.com/assets/claudia-intro-video.png)](https://youtu.be/lsXHWy4b-I0)
 
 The API Builder helps you by:
 
