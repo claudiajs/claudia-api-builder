@@ -175,6 +175,10 @@ module.exports = function ApiBuilder(options) {
 			}
 			if (isApiResponse(handlerResult)) {
 				mergeObjects(handlerResult.headers, result.headers);
+
+				if (handlerResult.multiValueHeaders) {
+					result.multiValueHeaders = handlerResult.multiValueHeaders;
+				}
 			}
 			if (isRedirect(statusCode)) {
 				result.headers.Location = getRedirectLocation(configuration, handlerResult);
@@ -477,10 +481,11 @@ module.exports = function ApiBuilder(options) {
 	['ANY'].concat(supportedMethods).forEach(setUpHandler);
 };
 
-module.exports.ApiResponse = function (response, headers, code) {
+module.exports.ApiResponse = function (response, headers, code, multiValueHeaders) {
 	'use strict';
 	this.response = response;
 	this.headers = headers;
 	this.code = code;
+	this.multiValueHeaders = multiValueHeaders;
 };
 
