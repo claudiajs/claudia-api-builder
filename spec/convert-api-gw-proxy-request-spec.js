@@ -433,4 +433,25 @@ describe('convertApiGWProxyRequest', () => {
 			});
 		});
 	});
+	describe('given utf-8 byte order marks', () => {
+		let expectedBody;
+		beforeEach(() => {
+			apiGWRequest.headers['Content-Type'] = 'text/some-unsupported-content-type; charset=utf-8';
+			expectedBody = ' field1 ,field2\nvalue1,value2';
+			apiGWRequest.body = `\ufeff${expectedBody}`;
+		});
+		it('should parse the string body as utf8-encoded and strip byte order marks', () => {
+			const {body} = underTest(apiGWRequest, {}, true);
+			expect(Buffer.from(body).toString('hex')).toEqual(Buffer.from(expectedBody).toString('hex'));
+		});
+		describe('given a Buffer body', () => {
+			beforeEach(() => {
+				apiGWRequest.body = Buffer.from(apiGWRequest.body, 'utf8');
+			});
+			it('should parse the Buffer body as utf8-encoded and strip byte order marks', () => {
+				const {body} = underTest(apiGWRequest, {}, true);
+				expect(Buffer.from(body).toString('hex')).toEqual(Buffer.from(expectedBody).toString('hex'));
+			});
+		});
+	});
 });
