@@ -38,9 +38,23 @@ const qs = require('querystring'),
 	},
 	getConvertedBody = function (body, contentType, isBase64Encoded) {
 		'use strict';
-		const textContentTypes = ['application/json', 'text/plain', 'application/xml', 'text/xml', 'application/x-www-form-urlencoded'];
+		const textContentTypes = ['application/json', 'text/plain', 'application/xml', 'text/xml', 'application/csv', 'text/csv', 'application/x-www-form-urlencoded'];
 		if (!isBase64Encoded) {
-			return body;
+			let encoding = false, skip = 0, result = body;
+			if (body instanceof Buffer) {
+				if (body.subarray(0, 3).equals(Buffer.from([0xEF, 0xBB, 0xBF]))) {
+					encoding = 'utf8';
+					skip = 3;
+				}
+				result = encoding ? result.subarray(skip, result.length).toString(encoding) : result;
+			} else if (typeof body === 'string' || body instanceof String) {
+				if (body[0] === '\ufeff') {
+					encoding = 'utf8';
+					skip = 1;
+				}
+				result = encoding ? result.substr(skip, result.length).toString(encoding) : result;
+			}
+			return result;
 		} else {
 			const buffer = new Buffer(body, 'base64');
 			if (textContentTypes.indexOf(contentType) >= 0) {
